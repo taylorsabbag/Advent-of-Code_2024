@@ -2,11 +2,20 @@
   "name": "advent-of-code_2024",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
+    "build": "tsc",
+    "start:day": "npm run build && node --env-file=.env dist/solutions/day-$DAY/index.js",
+    "day": "DAY=1 npm run start:day",
+    "dev": "tsx watch --env-file=.env solutions/day-1/index.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Taylor Sabbag",
   "license": "ISC",
-  "description": ""
+  "description": "My solutions to the Advent of Code 2024 challenges.",
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "typescript": "^5.7.2"
+  }
 }
