@@ -17,7 +17,7 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 
 </div>
 
-## ✨ Features
+## Features
 
 - 🚀 **Automatic Input Fetching** - Downloads puzzle inputs with session token
 - ✅ **Answer Validation** - Verifies solutions against AoC API
@@ -28,13 +28,13 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 - ⚡ **Performance Tracking** - Solution execution timing
 - 🛠️ **Developer Tools** - ESLint, Prettier, and more
 
-## 🚦 Prerequisites
+## Prerequisites
 
 - Node.js 20.x or later
 - npm 9.x or later
 - Advent of Code session token
 
-## 🔧 Setup
+## Setup
 
 1. **Clone and Install**
 
@@ -56,7 +56,7 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
    2. Open DevTools (F12) → Application → Storage → Cookies
    3. Copy the 'session' cookie value
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 advent-of-code_2024/
@@ -69,7 +69,7 @@ advent-of-code_2024/
 └── .cache/            # Cached puzzle inputs
 ```
 
-## 🚀 Running Solutions
+## Running Solutions
 
 ```bash
 # Run specific day
@@ -85,7 +85,7 @@ npm run start:latest
 DAY=N npm run dev
 ```
 
-## 👩‍💻 Development
+## Development
 
 ```bash
 # Create new solution
@@ -102,7 +102,7 @@ npm run lint:fix
 npm run build
 ```
 
-## 🧪 Solution Template
+## Solution Template
 
 Each solution includes:
 
@@ -112,7 +112,7 @@ Each solution includes:
 - Error handling
 - Consistent structure
 
-## 🤝 Contributing
+## Contributing
 
 1. Fork the repository
 2. Create feature branch (`git checkout -b feature/amazing-solution`)
@@ -120,7 +120,7 @@ Each solution includes:
 4. Push to branch (`git push origin feature/amazing-solution`)
 5. Open a Pull Request
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Language:** TypeScript 5.7
 - **Runtime:** Node.js 20.x
@@ -131,7 +131,7 @@ Each solution includes:
   - tsx (for hot reloading)
   - dotenv
 
-## 💾 Caching
+## Caching
 
 Input files are cached in `.cache/`:
 
@@ -140,11 +140,11 @@ Input files are cached in `.cache/`:
 - Improves performance
 - Git-ignored by default
 
-## 📝 License
+## License
 
 [ISC License](LICENSE)
 
-## 👤 Author
+## Author
 
 Taylor Sabbag
 
