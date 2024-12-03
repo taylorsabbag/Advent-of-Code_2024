@@ -27,9 +27,5 @@ npm-debug.log*
 .env.local
 .env.*.local
 
-# Project specific
-biome.json
-.cursorignore
-
 # Cache
 .cache/
