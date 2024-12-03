@@ -20,6 +20,8 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 - [Solution Template](#solution-template)
 - [Contributing](#contributing)
 - [Technologies Used](#technologies-used)
+- [Caching](#caching)
+- [Development Tools](#development-tools)
 - [License](#license)
 - [Author](#author)
 
@@ -70,8 +72,10 @@ To get your session token:
 ```
 advent-of-code_2024/
     ├── solutions/ # Daily solution files
-    │ └── day-N/ # N = day number
-    │   └── index.ts # Solution implementation
+    │       ├── day-N/ # N = day number
+    │       │     └── index.ts # Solution implementation
+    │       └── template/
+    │             └── template.ts # Template for all solutions
     ├── utils/ # Utility functions
     ├── dist/ # Compiled JavaScript files
     └── README.md
@@ -133,6 +137,24 @@ Each day's solution follows a consistent structure with:
 - Node.js
 - ESM modules
 - Environment variable support
+
+## Caching
+
+Input files are automatically cached in the `.cache` directory to:
+
+- Reduce API calls to Advent of Code servers
+- Enable offline development
+- Speed up subsequent runs
+
+Cached files are ignored by git to avoid sharing inputs.
+
+## Development Tools
+
+- 🔄 Hot module reloading with `tsx watch`
+- 🎯 Path aliases for cleaner imports
+- ⏱️ Solution timing decorators
+- 🚨 Custom error handling
+- 📝 Automatic day generation
 
 ## License
 
