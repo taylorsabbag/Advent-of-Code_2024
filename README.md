@@ -126,14 +126,6 @@ Each solution includes:
 - Error handling
 - Consistent structure
 
-## Contributing
-
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-solution`)
-3. Commit changes (`git commit -m 'Add amazing solution'`)
-4. Push to branch (`git push origin feature/amazing-solution`)
-5. Open a Pull Request
-
 ## Tech Stack
 
 - **Language:** TypeScript 5.7
@@ -143,7 +135,6 @@ Each solution includes:
   - ESLint
   - Prettier
   - tsx (for hot reloading)
-  - dotenv
 
 ## Caching
 
