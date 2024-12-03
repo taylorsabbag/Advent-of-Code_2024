@@ -8,6 +8,7 @@ import {
 	extractDayNumber,
 	getCurrentYear,
 	timed,
+	AoCError,
 } from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
@@ -39,8 +40,11 @@ function formatInput(input: string): [IndexedValue[], IndexedValue[]] {
 
 		return [leftList, rightList];
 	} catch (error) {
-		throw new Error(
+		throw new AoCError(
 			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			1,
+			error instanceof Error ? error : undefined,
 		);
 	}
 }
@@ -66,8 +70,11 @@ function solvePuzzle1(input: [IndexedValue[], IndexedValue[]]): number {
 
 		return sumOfDistance;
 	} catch (error) {
-		throw new Error(
+		throw new AoCError(
 			`Error solving puzzle 1: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			1,
+			error instanceof Error ? error : undefined,
 		);
 	}
 }
@@ -93,8 +100,11 @@ function solvePuzzle2(input: [IndexedValue[], IndexedValue[]]): number {
 
 		return similarityScore;
 	} catch (error) {
-		throw new Error(
+		throw new AoCError(
 			`Error solving puzzle 2: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			2,
+			error instanceof Error ? error : undefined,
 		);
 	}
 }

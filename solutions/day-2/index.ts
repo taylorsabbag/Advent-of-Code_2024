@@ -8,6 +8,7 @@ import {
 	extractDayNumber,
 	getCurrentYear,
 	timed,
+	AoCError,
 } from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
@@ -29,8 +30,11 @@ function formatInput(input: string) {
 			.map((report) => report.split(" ").map(Number));
 		return { reports };
 	} catch (error) {
-		throw new Error(
+		throw new AoCError(
 			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			1,
+			error instanceof Error ? error : undefined,
 		);
 	}
 }
@@ -73,8 +77,11 @@ function solvePuzzle1(input: ReturnType<typeof formatInput>): number {
 		}
 		return safeCount;
 	} catch (error) {
-		throw new Error(
+		throw new AoCError(
 			`Error solving puzzle 1: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			1,
+			error instanceof Error ? error : undefined,
 		);
 	}
 }
@@ -133,8 +140,11 @@ function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
 
 		return safeCount;
 	} catch (error) {
-		throw new Error(
+		throw new AoCError(
 			`Error solving puzzle 2: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			2,
+			error instanceof Error ? error : undefined,
 		);
 	}
 }
