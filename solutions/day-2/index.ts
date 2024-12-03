@@ -83,8 +83,52 @@ function solvePuzzle1(input: ReturnType<typeof formatInput>): number {
  */
 function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
 	try {
-		// TODO: Implement solution for part 2
-		return 0;
+		const { reports } = input;
+		let safeCount = 0;
+
+		const isValidSequence = (report: readonly number[]): boolean => {
+			let isIncreasing: boolean | undefined;
+			
+			for (let i = 1; i < report.length; i++) {
+				const diff = report[i] - report[i - 1];
+				
+				if (Math.abs(diff) >= 4 || Math.abs(diff) === 0) {
+					return false;
+				}
+				
+				const currentIncreasing = diff > 0;
+				
+				if (isIncreasing === undefined) {
+					isIncreasing = currentIncreasing;
+					continue;
+				}
+				
+				if (currentIncreasing !== isIncreasing) {
+					return false;
+				}
+			}
+			
+			return true;
+		};
+
+		for (const report of reports) {
+			// First check if it's already valid
+			if (isValidSequence(report)) {
+				safeCount++;
+				continue;
+			}
+			
+			// Try removing each element one at a time
+			for (let i = 0; i < report.length; i++) {
+				const newReport = [...report.slice(0, i), ...report.slice(i + 1)];
+				if (isValidSequence(newReport)) {
+					safeCount++;
+					break;
+				}
+			}
+		}
+		
+		return safeCount;
 	} catch (error) {
 		throw new Error(
 			`Error solving puzzle 2: ${error instanceof Error ? error.message : "Unknown error"}`,

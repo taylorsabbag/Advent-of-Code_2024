@@ -52,7 +52,7 @@ export default async function checkAnswer(
     const cleanContent = paragraphContent.replace(/<[^>]+>/g, "").trim();
     const lowerCaseResponse = cleanContent.toLowerCase();
 
-    let result: AnswerResponse = {
+    const result: AnswerResponse = {
       isCorrect: false,
       explanation: "",
       message: cleanContent
