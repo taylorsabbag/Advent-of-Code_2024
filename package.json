@@ -5,12 +5,13 @@
 	"type": "module",
 	"scripts": {
 		"build": "tsc",
-		"start:day": "tsx --env-file=.env solutions/day-$DAY/index.ts",
-		"dev": "tsx watch --env-file=.env solutions/day-$DAY/index.ts",
+		"start:day": "npm run build && node --env-file=.env dist/solutions/day-$DAY/index.js",
+		"dev": "tsx watch --env-file=.env --tsconfig tsconfig.json solutions/day-$DAY/index.ts",
 		"day": "DAY=$(date '+%-d') npm run start:day",
+		"start:latest": "npm run start:day $(ls -1 solutions/day-* | sort -V | tail -n1 | grep -o '[0-9]\\+')",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"lint": "biome check",
-		"new": "tsx scripts/create-day.ts",
+		"new": "tsx --tsconfig tsconfig.json scripts/create-day.ts",
 		"lint:fix": "biome check --apply",
 		"format": "biome format --write ."
 	},
