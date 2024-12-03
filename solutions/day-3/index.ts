@@ -17,46 +17,53 @@ const CURRENT_YEAR = getCurrentYear();
 const testInput =
 	"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
 
+enum InstructionType {
+	Do = "do",
+	Dont = "dont",
+	Mul = "mul",
+}
+
+interface MulInstruction {
+	shouldExecute: boolean;
+	x: number;
+	y: number;
+}
+
 /**
  * Formats the raw input string into the required data structure
  * @param input - Raw puzzle input string
  * @returns Formatted input data
  */
-function formatInput(input: string) {
+function formatInput(input: string): MulInstruction[] {
 	try {
-		// Create type for our return value
-		type Instruction = [boolean, number, number];
-		
-		// First, find all instructions (do, don't, and mul) in order
-		const instructionPattern = /(?:do\(\)|don't\(\)|mul\((?<x>\d+),(?<y>\d+)\))/g;
-		const instructions = Array.from(input.matchAll(instructionPattern));
-		
-		const results: Instruction[] = [];
-		let shouldExec = true; // Default to true if no do/don't is found
-		
-		for (const instruction of instructions) {
-			const match = instruction[0];
-			
-			if (match === "do()") {
-				shouldExec = true;
-				continue;
-			}
-			
-			if (match === "don't()") {
-				shouldExec = false;
-				continue;
-			}
-			
-			// Must be a mul instruction
-			const mulMatch = match.match(/mul\((?<x>\d+),(?<y>\d+)\)/);
-			if (!mulMatch?.groups) {
-				throw new Error("Failed to extract numbers from mul instruction");
-			}
-			
-			const { x, y } = mulMatch.groups;
-			results.push([shouldExec, Number(x), Number(y)]);
+		if (typeof input !== "string") {
+			throw new Error("Input must be a string");
 		}
-		
+
+		const pattern = /(?:do\(\)|don't\(\)|mul\((\d+),(\d+)\))/g;
+		const results: MulInstruction[] = [];
+		let shouldExec = true;
+		let match: RegExpExecArray | null;
+
+		while (true) {
+			match = pattern.exec(input);
+			if (match === null) break;
+
+			const [full, x, y] = match;
+
+			if (full === "do()") {
+				shouldExec = true;
+			} else if (full === "don't()") {
+				shouldExec = false;
+			} else if (x && y) {
+				results.push({
+					shouldExecute: shouldExec,
+					x: Number(x),
+					y: Number(y),
+				});
+			}
+		}
+
 		return results;
 	} catch (error) {
 		throw new AoCError(
@@ -73,10 +80,13 @@ function formatInput(input: string) {
  * @param input - Formatted input data
  * @returns Solution to part 1
  */
-function solvePart1(input: ReturnType<typeof formatInput>): number {
+function solvePart1(input: MulInstruction[]): number {
 	try {
-		const instructions = input!;
-		return instructions.reduce((acc, [_shouldExec, x, y]) => acc + (x * y), 0);
+		let sum = 0;
+		for (const { x, y } of input) {
+			sum += x * y;
+		}
+		return sum;
 	} catch (error) {
 		throw new AoCError(
 			`Error solving puzzle 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -92,10 +102,15 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
  * @param input - Formatted input data
  * @returns Solution to part 2
  */
-function solvePart2(input: ReturnType<typeof formatInput>): number {
+function solvePart2(input: MulInstruction[]): number {
 	try {
-		const instructions = input!;
-		return instructions.reduce((acc, [shouldExec, x, y]) => acc + (shouldExec ? x * y : 0), 0);
+		let sum = 0;
+		for (const { shouldExecute, x, y } of input) {
+			if (shouldExecute) {
+				sum += x * y;
+			}
+		}
+		return sum;
 	} catch (error) {
 		throw new AoCError(
 			`Error solving puzzle 2: ${error instanceof Error ? error.message : "Unknown error"}`,
