@@ -111,11 +111,6 @@ npm run new N      # Replace N with day number (1-25)
 npm run new:all
 ```
 
-Each generated day folder includes:
-- A TypeScript solution file (`index.ts`)
-- An empty input file (`input.txt`) for the day's puzzle input
-- A README with space for notes and problem description
-
 ## Solution Template
 
 Each solution includes:
