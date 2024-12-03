@@ -9,6 +9,7 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 
 <!-- omit in toc -->
 ## Table of Contents
+
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
@@ -21,7 +22,6 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 - [Technologies Used](#technologies-used)
 - [License](#license)
 - [Author](#author)
-
 
 ## Features
 
@@ -45,22 +45,28 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 git clone [your-repo-url]
 cd advent-of-code_2024
 ```
+
 2. Install dependencies:
+
 ```bash
 npm i
 ```
+
 3. Create a `.env` file in the root directory
+
 ```bash
 AOC_SESSION=your_session_token_here
 ```
 
 To get your session token:
+
 1. Log into [Advent of Code](https://adventofcode.com)
 2. Open browser DevTools (F12)
 3. Go to Application/Storage > Cookies
 4. Copy the value of the 'session' cookie
 
 ## Project Structure
+
 ```
 advent-of-code_2024/
     ├── solutions/ # Daily solution files
@@ -74,11 +80,15 @@ advent-of-code_2024/
 ## Running Solutions
 
 1. Run a specific day:
+
 ```bash
 DAY=N npm run start:day
 ```
+
 Replace 'N' with the day number (1-25)
+
 2. Run current day (default):
+
 ```bash
 npm run day
 ```
@@ -86,6 +96,7 @@ npm run day
 ## Development
 
 To work on a solution with hot reloading:
+
 ```bash
 npm run dev
 ```
@@ -93,6 +104,7 @@ npm run dev
 ## Building
 
 To compile TypeScript files:
+
 ```bash
 npm run build
 ```
@@ -100,6 +112,7 @@ npm run build
 ## Solution Template
 
 Each day's solution follows a consistent structure with:
+
 - Input parsing
 - Part 1 solution
 - Part 2 solution
