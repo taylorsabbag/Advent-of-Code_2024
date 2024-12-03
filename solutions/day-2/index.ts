@@ -3,8 +3,12 @@
  * @see https://adventofcode.com/2024/day/2
  */
 
-import { extractDayNumber, getCurrentYear } from "../../utils/dates.js";
-import { runner as runSolution } from "../../utils/index.js";
+import {
+	runner as runSolution,
+	extractDayNumber,
+	getCurrentYear,
+	timed,
+} from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
 const CURRENT_YEAR = getCurrentYear();
@@ -135,4 +139,10 @@ function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
 	}
 }
 
-runSolution(CURRENT_YEAR, CURRENT_DAY, formatInput, solvePuzzle1, solvePuzzle2);
+runSolution(
+	CURRENT_YEAR,
+	CURRENT_DAY,
+	formatInput,
+	timed(solvePuzzle1),
+	timed(solvePuzzle2),
+);

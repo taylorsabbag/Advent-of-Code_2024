@@ -1,5 +1,38 @@
-.env
+# Dependencies
 node_modules/
+.pnp/
+.pnp.js
+
+# Build output
 dist/
+scripts/**/*.js
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.code-workspace
+.idea/
+*.swp
+*.swo
+
+# Logs
+.logs/
+.debug/
+.perf/
+npm-debug.log*
+**/error.log
+**/perf.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Project specific
 biome.json
 .cursorignore
+
+# Cache
+.cache/
