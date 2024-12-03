@@ -43,7 +43,7 @@ advent-of-code_2024/
 DAY=N npm run start:day
 ```
 Replace 'N' with the day number (1-25)
-2. Run day 1 (default):
+2. Run current day (default):
 ```bash
 npm run day
 ```
