@@ -26,5 +26,7 @@ async function createDay(day: number): Promise<void> {
 	}
 }
 
-const day = process.argv[2] ? Number.parseInt(process.argv[2]) : new Date().getDate();
+const day = process.argv[2]
+	? Number.parseInt(process.argv[2])
+	: new Date().getDate();
 createDay(day);
