@@ -37,6 +37,7 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 ## 🔧 Setup
 
 1. **Clone and Install**
+
    ```bash
    git clone [your-repo-url]
    cd advent-of-code_2024
@@ -44,6 +45,7 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
    ```
 
 2. **Configure Environment**
+
    ```bash
    # Create .env file
    echo "AOC_SESSION=your_session_token_here" > .env
@@ -103,6 +105,7 @@ npm run build
 ## 🧪 Solution Template
 
 Each solution includes:
+
 - Strong TypeScript types
 - Input parsing utilities
 - Performance measurements
@@ -131,6 +134,7 @@ Each solution includes:
 ## 💾 Caching
 
 Input files are cached in `.cache/`:
+
 - Minimizes API requests
 - Enables offline work
 - Improves performance
