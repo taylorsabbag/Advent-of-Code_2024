@@ -1,6 +1,33 @@
+<!-- omit in toc -->
 # Advent of Code 2024 Solutions
 
+[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue)](https://www.typescriptlang.org/)
+[![Node.js Version](https://img.shields.io/badge/Node.js-20.x-green)](https://nodejs.org/)
+
 My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challenges, implemented in TypeScript.
+
+- [Features](#features)
+- [Prerequisites](#prerequisites)
+- [Setup](#setup)
+- [Project Structure](#project-structure)
+- [Running Solutions](#running-solutions)
+- [Development](#development)
+- [Building](#building)
+- [Solution Template](#solution-template)
+- [Contributing](#contributing)
+- [Technologies Used](#technologies-used)
+- [License](#license)
+- [Author](#author)
+
+
+## Features
+
+- 🚀 Automatic puzzle input fetching
+- ✅ Answer validation against AoC API
+- 📝 TypeScript with strict type checking
+- 🔄 Hot reloading during development
+- 🧪 Consistent solution structure
 
 ## Prerequisites
 
@@ -24,6 +51,12 @@ npm i
 ```bash
 AOC_SESSION=your_session_token_here
 ```
+
+To get your session token:
+1. Log into [Advent of Code](https://adventofcode.com)
+2. Open browser DevTools (F12)
+3. Go to Application/Storage > Cookies
+4. Copy the value of the 'session' cookie
 
 ## Project Structure
 ```
@@ -71,6 +104,14 @@ Each day's solution follows a consistent structure with:
 - Error handling
 - TypeScript type safety
 
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-solution`)
+3. Commit your changes (`git commit -m 'Add amazing solution'`)
+4. Push to the branch (`git push origin feature/amazing-solution`)
+5. Open a Pull Request
+
 ## Technologies Used
 
 - TypeScript
@@ -80,7 +121,7 @@ Each day's solution follows a consistent structure with:
 
 ## License
 
-ISC
+This project is licensed under the ISC License - see the [LICENSE](LICENSE) file for details.
 
 ## Author
 
