@@ -3,7 +3,11 @@
  * @see https://adventofcode.com/2024/day/1
  */
 
-import { getInput, checkAnswer } from "../../utils/index.js";
+import { runner as runSolution } from "../../utils/index.js";
+
+const CURRENT_DAY = 1;
+if (!process.env.CURRENT_YEAR) throw new Error("CURRENT_YEAR environment variable is not set");
+const CURRENT_YEAR = Number.parseInt(process.env.CURRENT_YEAR);
 
 const testInput = '3   4\n4   3\n2   5\n1   3\n3   9\n3   3';
 
@@ -83,25 +87,12 @@ function solvePuzzle2(input: [IndexedValue[], IndexedValue[]]): number {
     }
 }
 
-async function main(): Promise<void> {
-    try {
-        const rawInput = await getInput(2024, 1);
-        const formattedInput = formatInput(rawInput);
 
-        const solution1 = solvePuzzle1(formattedInput);
-        console.log("Solution 1:", solution1);
-        const isCorrect1 = await checkAnswer(2024, 1, solution1.toString(), 1);
-        console.log("Is correct 1:", isCorrect1);
-        
-        const solution2 = solvePuzzle2(formattedInput);
-        console.log("Solution 2:", solution2);
-        const isCorrect2 = await checkAnswer(2024, 1, solution2.toString(), 2);
-        console.log("Is correct 2:", isCorrect2);
-    } catch (error) {
-        console.error("Error:", error instanceof Error ? error.message : "Unknown error");
-        process.exit(1);
-    }
-}
-
-main();
+runSolution(
+    CURRENT_YEAR,
+    CURRENT_DAY,
+    formatInput,
+    solvePuzzle1,
+    solvePuzzle2
+);
 
