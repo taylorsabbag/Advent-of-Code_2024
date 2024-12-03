@@ -13,7 +13,9 @@ async function createDay(day: number): Promise<void> {
 		const template = await fs.readFile(templatePath, "utf-8");
 
 		// Replace placeholder
-		const content = template.replace(/Day N/g, `Day ${day}`);
+		const content = template
+			.replace(/Day N/g, `Day ${day}`)
+			.replace(/day\/N/g, `day/${day}`);
 
 		// Write new solution file
 		await fs.writeFile(path.join(solutionDir, "index.ts"), content);
