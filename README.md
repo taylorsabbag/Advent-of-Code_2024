@@ -91,18 +91,44 @@ DAY=N npm run start:day
 
 Replace 'N' with the day number (1-25)
 
-2. Run current day (default):
+2. Run current day (uses today's date):
 
 ```bash
 npm run day
 ```
 
-## Development
-
-To work on a solution with hot reloading:
+3. Run most recent solution:
 
 ```bash
-npm run dev
+npm run start:latest
+```
+
+## Development
+
+1. Create a new day's solution:
+
+```bash
+npm run new [day]  # day is optional, defaults to current date
+```
+
+2. Work on a solution with hot reloading:
+
+```bash
+DAY=N npm run dev
+```
+
+3. Code formatting and linting:
+
+```bash
+npm run format    # Format all files
+npm run lint      # Check for issues
+npm run lint:fix  # Automatically fix issues
+```
+
+4. Build the project:
+
+```bash
+npm run build
 ```
 
 ## Building
