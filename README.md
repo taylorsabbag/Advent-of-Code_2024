@@ -7,6 +7,8 @@
 
 My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challenges, implemented in TypeScript.
 
+<!-- omit in toc -->
+## Table of Contents
 - [Features](#features)
 - [Prerequisites](#prerequisites)
 - [Setup](#setup)
