@@ -3,12 +3,11 @@
  * @see https://adventofcode.com/2024/day/2
  */
 
+import { extractDayNumber, getCurrentYear } from "../../utils/dates.js";
 import { runner as runSolution } from "../../utils/index.js";
 
-const CURRENT_DAY = 2;
-if (!process.env.CURRENT_YEAR)
-	throw new Error("CURRENT_YEAR environment variable is not set");
-const CURRENT_YEAR = Number.parseInt(process.env.CURRENT_YEAR);
+const CURRENT_DAY = extractDayNumber(import.meta.url);
+const CURRENT_YEAR = getCurrentYear();
 
 const testInput =
 	"7 6 4 2 1\n1 2 7 8 9\n9 7 6 2 1\n1 3 2 4 5\n8 6 4 4 1\n1 3 6 7 9";
@@ -88,26 +87,26 @@ function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
 
 		const isValidSequence = (report: readonly number[]): boolean => {
 			let isIncreasing: boolean | undefined;
-			
+
 			for (let i = 1; i < report.length; i++) {
 				const diff = report[i] - report[i - 1];
-				
+
 				if (Math.abs(diff) >= 4 || Math.abs(diff) === 0) {
 					return false;
 				}
-				
+
 				const currentIncreasing = diff > 0;
-				
+
 				if (isIncreasing === undefined) {
 					isIncreasing = currentIncreasing;
 					continue;
 				}
-				
+
 				if (currentIncreasing !== isIncreasing) {
 					return false;
 				}
 			}
-			
+
 			return true;
 		};
 
@@ -117,7 +116,7 @@ function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
 				safeCount++;
 				continue;
 			}
-			
+
 			// Try removing each element one at a time
 			for (let i = 0; i < report.length; i++) {
 				const newReport = [...report.slice(0, i), ...report.slice(i + 1)];
@@ -127,7 +126,7 @@ function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
 				}
 			}
 		}
-		
+
 		return safeCount;
 	} catch (error) {
 		throw new Error(
@@ -136,10 +135,4 @@ function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
 	}
 }
 
-runSolution(
-	CURRENT_YEAR,
-	CURRENT_DAY,
-	formatInput,
-	solvePuzzle1,
-	solvePuzzle2,
-);
+runSolution(CURRENT_YEAR, CURRENT_DAY, formatInput, solvePuzzle1, solvePuzzle2);
