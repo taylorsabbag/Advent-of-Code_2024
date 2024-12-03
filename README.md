@@ -60,14 +60,57 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 
 ```
 advent-of-code_2024/
-├── solutions/          # Daily solutions
-│   ├── day-N/         # N = day number
-│   │   └── index.ts   # Solution implementation
-│   └── template/      # Solution template
-├── utils/             # Shared utilities
+├── solutions/           # Daily puzzle solutions
+│   ├── day-{N}/        # Individual day solutions (1-25)
+│   │   └── index.ts    # Solution implementation
+│   └── template/       # Solution template files
+├── utils/              # Shared utilities
+│   ├── cache.ts        # Input caching functionality
+│   ├── checkAnswer.ts  # Solution validation
+│   ├── dates.ts        # Date handling utilities
+│   ├── errors.ts       # Custom error types
+│   ├── getInput.ts     # Puzzle input fetcher
+│   ├── index.ts        # Utility exports
+│   ├── performance.ts  # Timing utilities
+│   └── runner.ts       # Solution runner
+├── scripts/            # Project automation
+│   └── create-day.ts   # Solution scaffolding
+├── templates/          # Project templates
 ├── dist/              # Compiled output
-└── .cache/            # Cached puzzle inputs
+├── .cache/            # Cached puzzle inputs
+└── node_modules/      # Dependencies
 ```
+
+### Key Directories
+
+- **solutions/**: Contains daily puzzle solutions, each in its own directory with a standardized structure
+- **utils/**: Shared utilities for input handling, performance tracking, and solution validation
+- **scripts/**: Automation tools for project management and solution creation
+- **templates/**: Template files for generating new solutions
+- **dist/**: Compiled TypeScript output
+- **.cache/**: Local cache for puzzle inputs (git-ignored)
+
+### Solution Structure
+
+Each day's solution follows a consistent pattern:
+
+```
+solutions/day-N/
+└── index.ts           # Main solution file containing:
+    ├── formatInput()  # Input parser
+    ├── solvePart1()   # Part 1 solution
+    └── solvePart2()   # Part 2 solution
+```
+
+The solution template includes:
+
+- Strong TypeScript types
+- Error handling with custom AoCError
+- Performance tracking via the timed() wrapper
+- Standardized input parsing
+- Consistent error reporting
+
+This structure ensures consistency across solutions while maintaining clean separation of concerns and reusable utilities.
 
 ## Running Solutions
 
@@ -110,16 +153,6 @@ npm run new N      # Replace N with day number (1-25)
 # Create files for all 25 days at once
 npm run new:all
 ```
-
-## Solution Template
-
-Each solution includes:
-
-- Strong TypeScript types
-- Input parsing utilities
-- Performance measurements
-- Error handling
-- Consistent structure
 
 ## Tech Stack
 
