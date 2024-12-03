@@ -88,9 +88,6 @@ DAY=N npm run dev
 ## Development
 
 ```bash
-# Create new solution
-npm run new [day]     # day is optional
-
 # Format code
 npm run format
 
@@ -101,6 +98,23 @@ npm run lint:fix
 # Build project
 npm run build
 ```
+
+### Creating Solution Files
+
+The project includes scripts to create the necessary file structure for solutions:
+
+```bash
+# Create a single day's files
+npm run new N      # Replace N with day number (1-25)
+
+# Create files for all 25 days at once
+npm run new:all
+```
+
+Each generated day folder includes:
+- A TypeScript solution file (`index.ts`)
+- An empty input file (`input.txt`) for the day's puzzle input
+- A README with space for notes and problem description
 
 ## Solution Template
 

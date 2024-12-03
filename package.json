@@ -11,8 +11,9 @@
 		"start:latest": "npm run start:day $(ls -1 solutions/day-* | sort -V | tail -n1 | grep -o '[0-9]\\+')",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"lint": "biome check",
-		"new": "tsx --tsconfig tsconfig.json scripts/create-day.ts",
 		"lint:fix": "biome check --apply",
+		"new": "tsx --tsconfig tsconfig.json scripts/create-day.ts",
+		"new:all": "for d in {1..25}; do npm run new $d; done",
 		"format": "biome format --write ."
 	},
 	"keywords": [],
