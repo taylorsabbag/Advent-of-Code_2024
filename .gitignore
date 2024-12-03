@@ -8,10 +8,7 @@ dist/
 scripts/**/*.js
 
 # IDE
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
+.vscode/
 *.code-workspace
 .idea/
 *.swp
