@@ -3,9 +3,8 @@
  */
 type AnswerResponse = {
   isCorrect: boolean;
+  explanation: string;
   message: string;
-  isTooHigh?: boolean;
-  isTooLow?: boolean;
 };
 
 // TODO: Fix this function. It's not working.
@@ -43,51 +42,80 @@ export default async function checkAnswer(
     }
 
     const responseText = await response.text();
-    const lowerCaseResponse = responseText.toLowerCase();
+    
+    // Extract content from nested main>article>p tags
+    const mainContent = responseText.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1] ?? responseText;
+    const articleContent = mainContent.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1] ?? mainContent;
+    const paragraphContent = articleContent.match(/<p[^>]*>([\s\S]*?)<\/p>/i)?.[1]?.trim() ?? articleContent;
+    
+    // Remove any remaining HTML tags
+    const cleanContent = paragraphContent.replace(/<[^>]+>/g, "").trim();
+    const lowerCaseResponse = cleanContent.toLowerCase();
 
-    // Add debug logging
-    console.log("Raw response from AoC server:", responseText);
-    console.log("Response status:", response.status);
-    console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+    let result: AnswerResponse = {
+      isCorrect: false,
+      explanation: "",
+      message: cleanContent
+    };
 
+    // Check for rate limiting - either standalone or after incorrect answers
+    if (lowerCaseResponse.includes("wait")) {
+      // First try to match "have Xs left" pattern
+      const timeLeftMatch = cleanContent.match(/have\s+(\d+[ms])\s+left/i);
+      
+      // If that doesn't work, fall back to the original pattern
+      const waitTimeMatch = timeLeftMatch || cleanContent.match(
+        /(?:wait|waiting)\s+(\d+)\s*(minutes?|mins?|seconds?|secs?|s|m)\b/i
+      );
+      
+      let waitTime = "an unknown period";
+      if (timeLeftMatch) {
+        waitTime = timeLeftMatch[1]; // Already in the format we want (e.g., "20s")
+      } else if (waitTimeMatch) {
+        const [, duration, unit] = waitTimeMatch;
+        const normalizedUnit = unit.toLowerCase().startsWith("m") ? "minutes" : "seconds";
+        waitTime = `${duration} ${normalizedUnit}`;
+      }
+
+      const attemptsMatch = cleanContent.match(/guessed incorrectly (\d+) times/i);
+      const attempts = attemptsMatch ? attemptsMatch[1] : null;
+
+      result.explanation = attempts
+        ? `Too many incorrect attempts (${attempts}). Please wait ${waitTime} before trying again.`
+        : `Rate limited: Please wait ${waitTime} before trying again.`;
+    }
     // Check for various success patterns
-    if (
+    else if (
       lowerCaseResponse.includes("that's the right answer") ||
       lowerCaseResponse.includes("you got the right answer") ||
       lowerCaseResponse.includes("correct answer")
     ) {
-      return { isCorrect: true, message: "Correct answer!" };
+      result.isCorrect = true;
     }
-
     // Check for "too high" pattern
-    if (lowerCaseResponse.includes("too high")) {
-      return { 
-        isCorrect: false, 
-        message: "Answer is too high", 
-        isTooHigh: true 
-      };
+    else if (lowerCaseResponse.includes("too high")) {
+      result.explanation = "Answer is too high.";
     }
-
     // Check for "too low" pattern
-    if (lowerCaseResponse.includes("too low")) {
-      return { 
-        isCorrect: false, 
-        message: "Answer is too low", 
-        isTooLow: true 
-      };
+    else if (lowerCaseResponse.includes("too low")) {
+      result.explanation = "Answer is too low.";
     }
 
-    // If we get here, it's an incorrect answer but not too high/low
-    return { 
-      isCorrect: false, 
-      message: `Incorrect answer. Server response: ${responseText.slice(0, 100)}...` 
-    };
+    return result;
 
   } catch (error) {
     console.error("Error checking answer:", error);
+    
+    // If we have response text, include it in the error message
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const responseText = error instanceof Error && "responseText" in error 
+      ? (error as { responseText: string }).responseText 
+      : "";
+    
     return {
       isCorrect: false,
-      message: `Error checking answer: ${error instanceof Error ? error.message : "Unknown error"}`,
+      explanation: errorMessage,
+      message: responseText,
     };
   }
 }
