@@ -1,23 +1,27 @@
 {
-  "name": "advent-of-code_2024",
-  "version": "1.0.0",
-  "main": "index.js",
-  "type": "module",
-  "scripts": {
-    "build": "tsc",
-    "start:day": "npm run build && node --env-file=.env dist/solutions/day-$DAY/index.js",
-    "day": "DAY=$(date '+%-d') npm run start:day",
-    "dev": "tsx watch --env-file=.env solutions/day-1/index.ts",
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "biome check"
-  },
-  "keywords": [],
-  "author": "Taylor Sabbag",
-  "license": "ISC",
-  "description": "My solutions to the Advent of Code 2024 challenges.",
-  "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
-    "@types/node": "^22.10.1",
-    "typescript": "^5.7.2"
-  }
+	"name": "advent-of-code_2024",
+	"version": "1.0.0",
+	"main": "index.js",
+	"type": "module",
+	"scripts": {
+		"build": "tsc",
+		"start:day": "tsx --env-file=.env solutions/day-$DAY/index.ts",
+		"dev": "tsx watch --env-file=.env solutions/day-$DAY/index.ts",
+		"day": "DAY=$(date '+%-d') npm run start:day",
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"lint": "biome check",
+		"new": "tsx scripts/create-day.ts",
+		"lint:fix": "biome check --apply",
+		"format": "biome format --write ."
+	},
+	"keywords": [],
+	"author": "Taylor Sabbag",
+	"license": "ISC",
+	"description": "My solutions to the Advent of Code 2024 challenges.",
+	"devDependencies": {
+		"@biomejs/biome": "^1.9.4",
+		"@types/node": "^22.10.1",
+		"tsx": "^4.19.2",
+		"typescript": "^5.7.2"
+	}
 }
