@@ -24,14 +24,40 @@ const testInput =
  */
 function formatInput(input: string) {
 	try {
-		const matches = input.match(
-			// Match for all mul(x,y)
-			/mul\((?<x>\d+),(?<y>\d+)\)/g,
-		);
-		return matches?.map((match) => {
-			const [_, x, y] = match.match(/mul\((?<x>\d+),(?<y>\d+)\)/)!.slice(1);
-			return [Number(x), Number(y)];
-		});
+		// Create type for our return value
+		type Instruction = [boolean, number, number];
+		
+		// First, find all instructions (do, don't, and mul) in order
+		const instructionPattern = /(?:do\(\)|don't\(\)|mul\((?<x>\d+),(?<y>\d+)\))/g;
+		const instructions = Array.from(input.matchAll(instructionPattern));
+		
+		const results: Instruction[] = [];
+		let shouldExec = true; // Default to true if no do/don't is found
+		
+		for (const instruction of instructions) {
+			const match = instruction[0];
+			
+			if (match === "do()") {
+				shouldExec = true;
+				continue;
+			}
+			
+			if (match === "don't()") {
+				shouldExec = false;
+				continue;
+			}
+			
+			// Must be a mul instruction
+			const mulMatch = match.match(/mul\((?<x>\d+),(?<y>\d+)\)/);
+			if (!mulMatch?.groups) {
+				throw new Error("Failed to extract numbers from mul instruction");
+			}
+			
+			const { x, y } = mulMatch.groups;
+			results.push([shouldExec, Number(x), Number(y)]);
+		}
+		
+		return results;
 	} catch (error) {
 		throw new AoCError(
 			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -47,10 +73,10 @@ function formatInput(input: string) {
  * @param input - Formatted input data
  * @returns Solution to part 1
  */
-function solvePuzzle1(input: ReturnType<typeof formatInput>): number {
+function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
-		const mulPairs = input!;
-		return mulPairs.reduce((acc, [x, y]) => acc + (x * y), 0);
+		const instructions = input!;
+		return instructions.reduce((acc, [_shouldExec, x, y]) => acc + (x * y), 0);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving puzzle 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -66,9 +92,10 @@ function solvePuzzle1(input: ReturnType<typeof formatInput>): number {
  * @param input - Formatted input data
  * @returns Solution to part 2
  */
-function solvePuzzle2(input: ReturnType<typeof formatInput>): number {
+function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
-		return 0;
+		const instructions = input!;
+		return instructions.reduce((acc, [shouldExec, x, y]) => acc + (shouldExec ? x * y : 0), 0);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving puzzle 2: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -83,6 +110,6 @@ runSolution(
 	CURRENT_YEAR,
 	CURRENT_DAY,
 	formatInput,
-	timed(solvePuzzle1),
-	timed(solvePuzzle2),
+	timed(solvePart1),
+	timed(solvePart2),
 );
