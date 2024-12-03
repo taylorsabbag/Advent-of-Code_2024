@@ -5,8 +5,7 @@
 [![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg)](https://opensource.org/licenses/ISC)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.7-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![Node.js Version](https://img.shields.io/badge/Node.js-20.x-green?logo=node.js)](https://nodejs.org/)
-[![Code Style: Prettier](https://img.shields.io/badge/Code_Style-Prettier-ff69b4.svg?logo=prettier)](https://github.com/prettier/prettier)
-[![ESLint](https://img.shields.io/badge/ESLint-Configured-4B32C3?logo=eslint)](https://eslint.org/)
+[![Biome](https://img.shields.io/badge/Biome-Latest-60A5FA?logo=biome)](https://biomejs.dev/)
 
 My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challenges, implemented in TypeScript with a focus on clean, maintainable code.
 
