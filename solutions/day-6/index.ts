@@ -1,6 +1,6 @@
 /**
  * Solution for Advent of Code 2024 - Day 6
- * @see https://adventofcode.com/2024/day/N
+ * @see https://adventofcode.com/2024/day/6
  */
 
 import {
