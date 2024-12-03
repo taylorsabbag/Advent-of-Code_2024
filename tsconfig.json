@@ -13,8 +13,8 @@
 		"baseUrl": ".",
 		"paths": {
 			"@/*": ["./*"],
-			"@utils/*": ["./utils/*"],
-			"@solutions/*": ["./solutions/*"]
+			"@utils/*": ["utils/*"],
+			"@solutions/*": ["solutions/*"]
 		}
 	},
 	"include": ["**/*.ts"],

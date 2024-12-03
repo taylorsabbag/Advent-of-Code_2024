@@ -14,7 +14,8 @@ import {
 const CURRENT_DAY = extractDayNumber(import.meta.url);
 const CURRENT_YEAR = getCurrentYear();
 
-const testInput = "";
+const testInput =
+	"xmul(2,4)%&mul[3,7]!@^do_not_mul(5,5)+mul(32,64]then(mul(11,8)mul(8,5))";
 
 /**
  * Formats the raw input string into the required data structure
@@ -23,7 +24,14 @@ const testInput = "";
  */
 function formatInput(input: string) {
 	try {
-		return 0;
+		const matches = input.match(
+			// Match for all mul(x,y)
+			/mul\((?<x>\d+),(?<y>\d+)\)/g,
+		);
+		return matches?.map((match) => {
+			const [_, x, y] = match.match(/mul\((?<x>\d+),(?<y>\d+)\)/)!.slice(1);
+			return [Number(x), Number(y)];
+		});
 	} catch (error) {
 		throw new AoCError(
 			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -41,7 +49,8 @@ function formatInput(input: string) {
  */
 function solvePuzzle1(input: ReturnType<typeof formatInput>): number {
 	try {
-		return 0;
+		const mulPairs = input!;
+		return mulPairs.reduce((acc, [x, y]) => acc + (x * y), 0);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving puzzle 1: ${error instanceof Error ? error.message : "Unknown error"}`,
