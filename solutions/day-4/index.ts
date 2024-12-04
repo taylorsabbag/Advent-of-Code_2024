@@ -42,72 +42,50 @@ function formatInput(input: string) {
  */
 function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
-		const targetWords = ["XMAS", "SAMX"];
 		const directions = [
-			{ row: 0, col: 1 }, // right
-			{ row: 0, col: -1 }, // left
-			{ row: 1, col: 0 }, // down
-			{ row: -1, col: 0 }, // up
-			{ row: 1, col: 1 }, // diagonal down-right
+			{ row: 0, col: 1 },   // right
+			{ row: 0, col: -1 },  // left
+			{ row: 1, col: 0 },   // down
+			{ row: -1, col: 0 },  // up
+			{ row: 1, col: 1 },   // diagonal down-right
 			{ row: -1, col: -1 }, // diagonal up-left
-			{ row: 1, col: -1 }, // diagonal down-left
-			{ row: -1, col: 1 }, // diagonal up-right
+			{ row: 1, col: -1 },  // diagonal down-left
+			{ row: -1, col: 1 },  // diagonal up-right
 		];
 
-		/**
-		 * Gets a word at the given position and direction
-		 */
-		function getWord(
-			startRow: number,
-			startCol: number,
-			direction: { row: number; col: number },
-		): string[] | null {
-			const word: string[] = [];
+		let count = 0;
 
-			for (let i = 0; i < 4; i++) {
-				const row = startRow + direction.row * i;
-				const col = startCol + direction.col * i;
-
-				if (
-					row < 0 ||
-					row >= input.length ||
-					col < 0 ||
-					col >= input[0].length
-				) {
-					return null;
-				}
-
-				word.push(input[row][col]);
-			}
-
-			const wordStr = word.join("");
-			if (targetWords.includes(wordStr)) {
-				return word;
-			}
-
-			return null;
-		}
-
-		// First find all words
-		const words: Array<{
-			row: number;
-			col: number;
-			direction: { row: number; col: number };
-		}> = [];
-
-		// Check each position in the grid
 		for (let row = 0; row < input.length; row++) {
 			for (let col = 0; col < input[0].length; col++) {
+				// Only check if we start with 'X' or 'S'
+				const startChar = input[row][col];
+				if (startChar !== "X" && startChar !== "S") continue;
+
 				for (const dir of directions) {
-					const word = getWord(row, col, dir);
-					if (word) {
-						words.push({ row, col, direction: dir });
+					// Check bounds in all directions
+					const endRow = row + dir.row * 3;
+					const endCol = col + dir.col * 3;
+					if (endRow < 0 || endRow >= input.length || endCol < 0 || endCol >= input[0].length) {
+						continue;
+					}
+
+					// Build the word in this direction
+					const word = [
+						startChar,
+						input[row + dir.row][col + dir.col],
+						input[row + dir.row * 2][col + dir.col * 2],
+						input[row + dir.row * 3][col + dir.col * 3]
+					].join("");
+
+					// Check if it's XMAS or its reverse
+					if (word === "XMAS" || word === "SAMX") {
+						count++;
 					}
 				}
 			}
 		}
 
-		return words.length / 2;
+		return count / 2;
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
