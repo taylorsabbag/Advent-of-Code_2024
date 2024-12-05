@@ -43,14 +43,14 @@ function formatInput(input: string) {
 function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
 		const directions = [
-			{ row: 0, col: 1 },   // right
-			{ row: 0, col: -1 },  // left
-			{ row: 1, col: 0 },   // down
-			{ row: -1, col: 0 },  // up
-			{ row: 1, col: 1 },   // diagonal down-right
+			{ row: 0, col: 1 }, // right
+			{ row: 0, col: -1 }, // left
+			{ row: 1, col: 0 }, // down
+			{ row: -1, col: 0 }, // up
+			{ row: 1, col: 1 }, // diagonal down-right
 			{ row: -1, col: -1 }, // diagonal up-left
-			{ row: 1, col: -1 },  // diagonal down-left
-			{ row: -1, col: 1 },  // diagonal up-right
+			{ row: 1, col: -1 }, // diagonal down-left
+			{ row: -1, col: 1 }, // diagonal up-right
 		];
 
 		let count = 0;
@@ -65,7 +65,12 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 					// Check bounds in all directions
 					const endRow = row + dir.row * 3;
 					const endCol = col + dir.col * 3;
-					if (endRow < 0 || endRow >= input.length || endCol < 0 || endCol >= input[0].length) {
+					if (
+						endRow < 0 ||
+						endRow >= input.length ||
+						endCol < 0 ||
+						endCol >= input[0].length
+					) {
 						continue;
 					}
 
@@ -74,7 +79,7 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 						startChar,
 						input[row + dir.row][col + dir.col],
 						input[row + dir.row * 2][col + dir.col * 2],
-						input[row + dir.row * 3][col + dir.col * 3]
+						input[row + dir.row * 3][col + dir.col * 3],
 					].join("");
 
 					// Check if it's XMAS or its reverse
