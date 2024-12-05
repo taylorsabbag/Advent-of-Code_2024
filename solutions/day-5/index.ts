@@ -60,41 +60,52 @@ function formatInput(input: string) {
 	}
 }
 
+/**
+ * Applies ordering rules to determine correct and incorrect pages
+ * @param pages - Array of pages, each page is an array of numbers
+ * @param ruleMap - Map of numbers to arrays of numbers that must come after them
+ * @returns An object containing arrays of correct and incorrect pages
+ */
 function applyRules(
-    pages: number[][],
-    ruleMap: Record<number, number[]>,
+	pages: number[][],
+	ruleMap: Record<number, number[]>,
 ): { correctPages: number[][]; incorrectPages: number[][] } {
-    const correctPages: number[][] = [];
-    const incorrectPages: number[][] = [];
+	const correctPages: number[][] = [];
+	const incorrectPages: number[][] = [];
 
-    pages.forEach((page) => {
-        // Exit early optimization
-        let isCorrect = true;
-        for (let i = 0; i < page.length && isCorrect; i++) {
-            const num = page[i];
-            const mustComeAfter = ruleMap[num];
-            if (mustComeAfter) {
-                for (const afterNum of mustComeAfter) {
-                    const afterIndex = page.indexOf(afterNum);
-                    if (afterIndex !== -1 && afterIndex <= i) {
-                        isCorrect = false;
-                        break;
-                    }
-                }
-            }
-        }
+	pages.forEach((page) => {
+		// Exit early optimization
+		let isCorrect = true;
+		for (let i = 0; i < page.length && isCorrect; i++) {
+			const num = page[i];
+			const mustComeAfter = ruleMap[num];
+			if (mustComeAfter) {
+				for (const afterNum of mustComeAfter) {
+					const afterIndex = page.indexOf(afterNum);
+					if (afterIndex !== -1 && afterIndex <= i) {
+						isCorrect = false;
+						break;
+					}
+				}
+			}
+		}
 
-        if (isCorrect) {
-            correctPages.push(page);
-        } else {
-            incorrectPages.push(page);
-        }
-    });
+		if (isCorrect) {
+			correctPages.push(page);
+		} else {
+			incorrectPages.push(page);
+		}
+	});
 
-    return { correctPages, incorrectPages };
+	return { correctPages, incorrectPages };
 }
 
-const findAndAddMiddle = (correctPages: number[][]) =>
+/**
+ * Finds the middle element of each page and sums them
+ * @param correctPages - Array of pages, each page is an array of numbers
+ * @returns The sum of the middle elements of each page
+ */
+const findAndAddMiddle = (correctPages: number[][]): number =>
 	correctPages.reduce(
 		(acc, curr) => acc + curr[Math.floor(curr.length / 2)],
 		0,
@@ -138,15 +149,21 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 		 * @param rules - Map of numbers to their dependencies
 		 * @returns Sorted array respecting dependencies
 		 */
-		function topologicalSort(page: number[], rules: Record<number, number[]>): number[] {
+		function topologicalSort(
+			page: number[],
+			rules: Record<number, number[]>,
+		): number[] {
 			// Pre-compute page number set for O(1) lookups
 			const pageSet = new Set(page);
-			
+
 			// Pre-compute filtered dependencies
 			const graph = new Map<number, number[]>();
-			page.forEach(num => {
+			page.forEach((num) => {
 				// Only include dependencies that exist in the page
-				graph.set(num, (rules[num] || []).filter(dep => pageSet.has(dep)));
+				graph.set(
+					num,
+					(rules[num] || []).filter((dep) => pageSet.has(dep)),
+				);
 			});
 
 			const result: number[] = [];
@@ -168,10 +185,10 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 				}
 				temp[node] = false;
 				visited[node] = true;
-				result.unshift(node);
+				result.push(node);
 			}
 
-			page.forEach(num => {
+			page.forEach((num) => {
 				if (!visited[num]) {
 					visit(num);
 				}
@@ -180,7 +197,9 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 			return result;
 		}
 
-		const correctedPages = incorrectPages.map(page => topologicalSort(page, ruleMap));
+		const correctedPages = incorrectPages.map((page) =>
+			topologicalSort(page, ruleMap),
+		);
 		return findAndAddMiddle(correctedPages);
 	} catch (error) {
 		throw new AoCError(
