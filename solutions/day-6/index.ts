@@ -4,11 +4,11 @@
  */
 
 import {
-	runner as runSolution,
+	AoCError,
 	extractDayNumber,
 	getCurrentYear,
+	runner as runSolution,
 	timed,
-	AoCError,
 } from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
@@ -132,80 +132,125 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
 		const grid = input;
 		const startPos = findStartingPosition(grid);
-		
-		// Get the original patrol path using our existing function
-		const originalPath = patrol(grid, startPos);
 
-		// Check all empty spaces adjacent to the path
-		const potentialSpots = new Set<string>();
-		let result = 0;
+		// Convert our direction system to match the original solution
+		const dirToIndex = {
+			"^": 0, // Up
+			">": 1, // Right
+			v: 2, // Down
+			"<": 3, // Left
+		} as const;
 
-		originalPath.forEach(posStr => {
-			const [row, col] = posStr.split(",").map(Number);
-			
-			// Check all adjacent positions
-			for (const dir of Object.keys(directions) as Array<keyof typeof directions>) {
-				const adjacentPos = {
-					row: row + directions[dir].row,
-					col: col + directions[dir].col,
-				};
-				
+		// Track visited positions with direction
+		const visited = new Set<string>();
+		visited.add(
+			`${startPos.coordinate.row}_${startPos.coordinate.col}_${dirToIndex[startPos.direction]}`,
+		);
+		const visitedList = [
+			`${startPos.coordinate.row}_${startPos.coordinate.col}_${dirToIndex[startPos.direction]}`,
+		];
+
+		function walkPath(
+			row: number,
+			col: number,
+			dir: number,
+			visited: Set<string>,
+		): boolean {
+			while (true) {
+				let nextRow = row;
+				let nextCol = col;
+
+				// Calculate next position based on direction
+				switch (dir) {
+					case 0:
+						nextRow--;
+						break; // Up
+					case 1:
+						nextCol++;
+						break; // Right
+					case 2:
+						nextRow++;
+						break; // Down
+					case 3:
+						nextCol--;
+						break; // Left
+				}
+
+				// Gone off grid
 				if (
-					grid[adjacentPos.row]?.[adjacentPos.col] === "." &&
-					!potentialSpots.has(coordToString(adjacentPos))
+					nextRow < 0 ||
+					nextRow >= grid.length ||
+					nextCol < 0 ||
+					nextCol >= grid[0].length
 				) {
-					potentialSpots.add(coordToString(adjacentPos));
-					
-					// Test if placing an obstacle here creates a loop
-					const testGrid = grid.map(row => [...row]);
-					testGrid[adjacentPos.row][adjacentPos.col] = "#";
-					
-					const visited = new Set<string>();
-					let testPos = { ...startPos };
-					let steps = 0;
-					let foundLoop = false;
-					
-					while (true) {
-						const posWithDir = `${coordToString(testPos.coordinate)},${testPos.direction}`;
-						
-						// If we've seen this exact position and direction before, it's a loop
-						if (visited.has(posWithDir)) {
-							foundLoop = true;
-							break;
-						}
-						
-						if (steps > grid.length * grid[0].length * 4) {
-							// If we've taken too many steps without finding a loop or boundary,
-							// assume it's a loop
-							foundLoop = true;
-							break;
-						}
-						
-						visited.add(posWithDir);
-						const { row, col, nextDirection } = directions[testPos.direction];
-						const nextPos = {
-							row: testPos.coordinate.row + row,
-							col: testPos.coordinate.col + col,
-						};
-						
-						// If we hit a boundary, it's not a loop
-						if (!testGrid[nextPos.row]?.[nextPos.col]) break;
-						
-						if (testGrid[nextPos.row][nextPos.col] === "#") {
-							testPos.direction = nextDirection as keyof typeof directions;
-						} else {
-							testPos.coordinate = nextPos;
-						}
-						
-						steps++;
-					}
-					
-					if (foundLoop) result++;
+					break;
+				}
+
+				// Found a cycle
+				if (visited.has(`${nextRow}_${nextCol}_${dir}`)) {
+					return true;
+				}
+
+				// Hit an obstacle
+				if (grid[nextRow][nextCol] === "#") {
+					dir = (dir + 1) % 4; // Turn right
+				} else {
+					row = nextRow;
+					col = nextCol;
+					visited.add(`${row}_${col}_${dir}`);
+					visitedList.push(`${row}_${col}_${dir}`);
 				}
 			}
-		});
+			return false;
+		}
 
-		return result;
+		// Initial walk
+		walkPath(
+			startPos.coordinate.row,
+			startPos.coordinate.col,
+			dirToIndex[startPos.direction],
+			visited,
+		);
+
+		const candidates = new Set<string>();
+
+		// Walk backwards through visited positions
+		for (let i = visitedList.length - 1; i > 0; i--) {
+			const [row, col, dir] = visitedList[i].split("_").map(Number);
+
+			// Skip if this was the starting position
+			if (grid[row][col] === "^") continue;
+
+			// Temporarily place obstacle
+			const originalValue = grid[row][col];
+			grid[row][col] = "#";
+
+			// Get previous position
+			const [prevRow, prevCol, prevDir] = visitedList[i - 1]
+				.split("_")
+				.map(Number);
+
+			// Create new visited set up to this point
+			const newVisited = new Set(visitedList.slice(0, i));
+
+			// Skip if we would have hit this spot earlier
+			if ([0, 1, 2, 3].some((d) => newVisited.has(`${row}_${col}_${d}`))) {
+				grid[row][col] = originalValue;
+				continue;
+			}
+
+			// Check if this creates a cycle
+			const hasCycle = walkPath(prevRow, prevCol, prevDir, newVisited);
+
+			// Restore original value
+			grid[row][col] = originalValue;
+
+			if (hasCycle) {
+				candidates.add(`${row}_${col}`);
+			}
+		}
+
+		return candidates.size;
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
