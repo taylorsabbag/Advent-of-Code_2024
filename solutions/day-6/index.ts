@@ -69,52 +69,47 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 		};
 		const guard: Vector = findStartingPosition(grid);
 
-		function patrol(grid: string[][], startingPosition: Vector) {
-			const path: Coordinate[] = [];
-			let { coordinate: currentCoordinate, direction: currentDirection } =
-				startingPosition;
+		function patrol(grid: string[][], startingPosition: Vector): number {
+			const visited = new Set<string>();
+			let { coordinate: currentCoordinate, direction: currentDirection } = startingPosition;
+			
 			const directions = {
 				"^": { row: -1, col: 0, nextDirection: ">" },
 				"v": { row: 1, col: 0, nextDirection: "<" },
 				"<": { row: 0, col: -1, nextDirection: "^" },
 				">": { row: 0, col: 1, nextDirection: "v" },
 			};
+
+			// Helper to convert coordinate to string for Set storage
+			const coordToString = (coord: Coordinate): string => `${coord.row},${coord.col}`;
+			
 			while (true) {
+				// Add current position to visited set
+				visited.add(coordToString(currentCoordinate));
+
 				const { row, col, nextDirection } = directions[currentDirection];
 				const nextCoordinate = {
 					row: currentCoordinate.row + row,
 					col: currentCoordinate.col + col,
 				};
-				const nextCell = grid[nextCoordinate.row]?.[nextCoordinate.col];
-				if (!nextCell) {
-					path.push(currentCoordinate);
+
+				// Check if next position is valid
+				if (!grid[nextCoordinate.row]?.[nextCoordinate.col]) {
 					break;
 				}
-				if (nextCell === "#") {
+
+				if (grid[nextCoordinate.row][nextCoordinate.col] === "#") {
 					currentDirection = nextDirection as "^" | "v" | "<" | ">";
 					continue;
 				}
-				path.push(currentCoordinate);
+
 				currentCoordinate = nextCoordinate;
 			}
-			return path;
+
+			return visited.size;
 		}
 
-		// Create a function patrolDebug that returns the grid with the path marked by "X"
-		function countPath(grid: string[][], path: Coordinate[]) {
-			let pathCount = 0;
-			grid.forEach((row, rowIndex) =>
-				row.forEach((cell, colIndex) => {
-					if (path.some(({ row: pathRow, col: pathCol }) => pathRow === rowIndex && pathCol === colIndex)) {
-						grid[rowIndex][colIndex] = "X";
-						pathCount++;
-					}
-				}),
-			);
-			return pathCount
-		}
-
-		return countPath(grid, patrol(grid, guard));
+		return patrol(grid, guard);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
