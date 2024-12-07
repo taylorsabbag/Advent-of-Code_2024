@@ -63,34 +63,30 @@ const possibleOperators = {
  * @param allowedOperators - Allowed operators
  * @returns Sum of all reachable results
  */
-const sumReachable = (input: { result: number; operands: number[]}[], allowedOperators: Array<keyof typeof possibleOperators> = ["+", "*"]) => {
-	let reachable = 0;
-
-	input.forEach(({ result, operands }) => {
-		// Start with first number and try both operations with each subsequent number
-		let possibleValues = new Set([operands[0]]);
-
-		// For each subsequent number, try both operations with all current possible values
+const sumReachable = (
+	input: { result: number; operands: number[] }[], 
+	allowedOperators: Array<keyof typeof possibleOperators> = ["+", "*"]
+) => {
+	return input.reduce((total, { result, operands }) => {
+		// Use array instead of Set for better performance with small sets
+		let values = [operands[0]];
+		
+		// Process remaining operands
 		for (let i = 1; i < operands.length; i++) {
 			const current = operands[i];
-			const newPossibleValues = new Set<number>();
-
-			possibleValues.forEach((value) => {
+			const nextValues: number[] = [];
+			
+			for (const value of values) {
 				for (const operator of allowedOperators) {
-					newPossibleValues.add(possibleOperators[operator](value, current));
+					nextValues.push(possibleOperators[operator](value, current));
 				}
-			});
-
-			possibleValues = newPossibleValues;
+			}
+			values = nextValues;
 		}
-
-		// If the result is in our possible values, it's reachable
-		if (possibleValues.has(result)) {
-			reachable += result;
-		}
-	});
-
-	return reachable;
+		
+		// Use includes instead of has for small arrays
+		return total + (values.includes(result) ? result : 0);
+	}, 0);
 };
 
 /**
