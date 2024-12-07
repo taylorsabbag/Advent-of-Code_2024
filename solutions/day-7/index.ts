@@ -4,11 +4,11 @@
  */
 
 import {
-	runner as runSolution,
+	AoCError,
 	extractDayNumber,
 	getCurrentYear,
+	runner as runSolution,
 	timed,
-	AoCError,
 } from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
@@ -64,29 +64,56 @@ const possibleOperators = {
  * @returns Sum of all reachable results
  */
 const sumReachable = (
-	input: { result: number; operands: number[] }[], 
-	allowedOperators: Array<keyof typeof possibleOperators> = ["+", "*"]
+	input: { result: number; operands: number[] }[],
+	allowedOperators: Array<keyof typeof possibleOperators> = ["+", "*"],
 ) => {
-	return input.reduce((total, { result, operands }) => {
-		// Use array instead of Set for better performance with small sets
-		let values = [operands[0]];
-		
-		// Process remaining operands
-		for (let i = 1; i < operands.length; i++) {
-			const current = operands[i];
-			const nextValues: number[] = [];
-			
-			for (const value of values) {
-				for (const operator of allowedOperators) {
-					nextValues.push(possibleOperators[operator](value, current));
+	/**
+	 * Recursively checks if target is reachable using remaining numbers
+	 */
+	const isReachable = (target: number, nums: number[]): boolean => {
+		// Base case: single number
+		if (nums.length === 1) {
+			return target === nums[0];
+		}
+
+		const lastNum = nums[nums.length - 1];
+		const remainingNums = nums.slice(0, -1);
+
+		if (
+			allowedOperators.includes("+") &&
+			target >= lastNum &&
+			isReachable(target - lastNum, remainingNums)
+		) {
+			return true;
+		}
+
+		if (
+			allowedOperators.includes("*") &&
+			target % lastNum === 0 &&
+			isReachable(target / lastNum, remainingNums)
+		) {
+			return true;
+		}
+
+		if (allowedOperators.includes("||")) {
+			const targetStr = target.toString();
+			const numStr = lastNum.toString();
+			if (targetStr.endsWith(numStr) && targetStr !== numStr) {
+				const remaining = Number(targetStr.slice(0, -numStr.length));
+				if (isReachable(remaining, remainingNums)) {
+					return true;
 				}
 			}
-			values = nextValues;
 		}
-		
-		// Use includes instead of has for small arrays
-		return total + (values.includes(result) ? result : 0);
-	}, 0);
+
+		return false;
+	};
+
+	return input.reduce(
+		(sum, { result, operands }) =>
+			sum + (isReachable(result, operands) ? result : 0),
+		0,
+	);
 };
 
 /**
