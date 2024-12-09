@@ -97,61 +97,71 @@ function solvePart1(input: Segment[]): number {
 
 function solvePart2(input: Segment[]): number {
 	try {
-		type EmptySpace = { size: number; index: number };
-		const emptySpaces: EmptySpace[] = [];
-		const segments = [...input];
-
-		// Collect empty spaces
-		for (const segment of segments) {
+		// Convert our input format to match the array structure from OCaml solution
+		const array: Array<{ type: "Empty" | "File"; id?: number; size: number }> = [];
+		for (const segment of input) {
 			if (segment.value === null) {
-				emptySpaces.push({ size: segment.size, index: segment.index });
+				array.push({ type: "Empty", size: segment.size });
+			} else {
+				array.push({ type: "File", id: segment.value, size: segment.size });
 			}
 		}
 
-		// Sort empty spaces by index
-		emptySpaces.sort((a, b) => a.index - b.index);
+		// Helper function to calculate sum of integers from low to high inclusive
+		const intSum = (low: number, high: number): number => 
+			((high - low + 1) * (high + low)) / 2;
 
-		// Process files from highest ID to lowest
-		for (let i = segments.length - 1; i >= 0; i--) {
-			const segment = segments[i];
-			if (segment.value === null) continue;
-
-			// Find first empty space that's both:
-			// 1. Large enough to fit the file
-			// 2. Located to the left of the current file
-			let bestFitIndex = -1;
-			for (let j = 0; j < emptySpaces.length; j++) {
-				const space = emptySpaces[j];
-				if (space.size >= segment.size && space.index < segment.index) {
-					bestFitIndex = j;
-					break;  // Take the first (leftmost) valid space
-				}
-			}
-
-			if (bestFitIndex !== -1) {
-				const space = emptySpaces[bestFitIndex];
-				// Update segment position
-				segment.index = space.index;
-				
-				// Update empty space
-				space.size -= segment.size;
-				space.index += segment.size;
-				
-				// Remove empty space if fully used
-				if (space.size === 0) {
-					emptySpaces.splice(bestFitIndex, 1);
-				}
-			}
+		// Calculate initial positions
+		const positions: number[] = [];
+		let total = 0;
+		for (let i = 0; i < array.length; i++) {
+			positions[i] = total;
+			total += array[i].size;
 		}
 
-		// Calculate checksum
+		// Initialize memoization array for empty positions
+		const emptys: Array<number | null> = Array(10).fill(1);  // Start at odd positions
+
+		// Helper function to find empty spot
+		const findEmpty = (size: number, maxPos: number, startPos: number): number | null => {
+			let pos = startPos;
+			while (pos <= maxPos) {
+				if (array[pos].type === "Empty") {
+					if (array[pos].size >= size) {
+						// Shrink the free block
+						array[pos].size -= size;
+						return pos;
+					}
+				}
+				pos += 2; // Empty slots are at odd positions
+			}
+			return null;
+		};
+
+		// Memoized version of findEmpty
+		const memoizedFindEmpty = (size: number, maxPos: number): number | null => {
+			if (emptys[size] === null) return null;
+			const result = findEmpty(size, maxPos, emptys[size]!);
+			emptys[size] = result;
+			return result;
+		};
+
+		// Calculate final result
 		let result = 0;
-		for (const segment of segments) {
-			if (segment.value !== null) {
-				const n = segment.size;
-				const a1 = segment.index * segment.value;
-				const an = (segment.index + n - 1) * segment.value;
-				result += n * (a1 + an) / 2;
+		for (let i = array.length - 1; i >= 0; i--) {
+			const element = array[i];
+			if (element.type === "File") {
+				const newPos = (() => {
+					const emptySpot = memoizedFindEmpty(element.size, i);
+					if (emptySpot === null) {
+						return positions[i];
+					}
+					const n = positions[emptySpot];
+					positions[emptySpot] += element.size;
+					return n;
+				})();
+				
+				result += element.id! * intSum(newPos, newPos + element.size - 1);
 			}
 		}
 
