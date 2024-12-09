@@ -14,24 +14,33 @@ import {
 const CURRENT_DAY = extractDayNumber(import.meta.url);
 const CURRENT_YEAR = getCurrentYear();
 
-const testInput = "2333133121414131402";
+type Segment = {
+	value: number | null; // null for empty space, fileId for files
+	index: number;
+	size: number;
+};
 
 /**
- * Formats the raw input string into the required data structure
+ * Formats the raw input string into segments
  * @param input - Raw puzzle input string
- * @returns Formatted input data
+ * @returns Array of segments representing files and empty spaces
  */
-function formatInput(input: string) {
+function formatInput(input: string): Segment[] {
 	try {
-		let id = 0;
-		return input.split("").flatMap((fOrFS, index) => {
-			if (index % 2 === 0 || index === 0) {
-				const fileBlocks = new Array(Number(fOrFS)).fill(`${id++}`);
-				return fileBlocks;
+		const segments: Segment[] = [];
+		let index = 0;
+		let fileId = 0;
+
+		for (let i = 0; i < input.length; i++) {
+			const size = Number(input[i]);
+			if (i % 2 === 0) {
+				segments.push({ value: fileId++, index, size });
+			} else {
+				segments.push({ value: null, index, size });
 			}
-			const emptySpaces = new Array(Number(fOrFS)).fill(".");
-			return emptySpaces;
-		});
+			index += size;
+		}
+		return segments;
 	} catch (error) {
 		throw new AoCError(
 			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -42,56 +51,38 @@ function formatInput(input: string) {
 	}
 }
 
-const calculateChecksum = (input: string[]): number => {
-	return input.reduce((acc, curr, index) => {
-		if (curr === ".") return acc;
-		return acc + Number(curr) * index;
-	}, 0);
-};
-
-/**
- * Solves part 1 of the puzzle
- * @param input - Formatted input data
- * @returns Solution to part 1
- */
-function solvePart1(input: ReturnType<typeof formatInput>): number {
+function solvePart1(input: Segment[]): number {
 	try {
-		const swapFileBlocks = (input: string[], from: number, to: number) => {
-			[input[from], input[to]] = [input[to], input[from]];
-		};
+		const result: (number | null)[] = [];
 
-		const rearrangeFileBlocks = (input: ReturnType<typeof formatInput>) => {
-			// Create a copy to avoid mutating the input
-			const result = [...input];
-			let left = 0;
-			let right = result.length - 1;
+		// Fill array with initial values
+		for (const segment of input) {
+			for (let i = 0; i < segment.size; i++) {
+				result.push(segment.value);
+			}
+		}
 
-			// Continue until pointers meet
-			while (left < right) {
-				// Skip if left pointer is already on a file block
-				if (result[left] !== ".") {
-					left++;
-					continue;
-				}
-
-				// Skip if right pointer is already on an empty space
-				if (result[right] === ".") {
-					right--;
-					continue;
-				}
-
-				// Swap empty space with file block
-				swapFileBlocks(result, left, right);
+		// Move files to the left
+		let left = 0;
+		let right = result.length - 1;
+		while (left <= right) {
+			if (result[left] !== null) {
+				left++;
+			} else if (result[right] === null) {
+				right--;
+			} else {
+				[result[left], result[right]] = [result[right], result[left]];
 				left++;
 				right--;
 			}
+		}
 
-			return result;
-		};
-
-		const rearrangedInput = rearrangeFileBlocks(input);
-		const checksum = calculateChecksum(rearrangedInput);
-		return checksum;
+		// Calculate checksum
+		return result.reduce(
+			(acc: number, curr: number | null, index: number) =>
+				acc + (curr !== null ? curr * index : 0),
+			0,
+		);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -102,73 +93,48 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 	}
 }
 
-/**
- * Solves part 2 of the puzzle
- * @param input - Formatted input data
- * @returns Solution to part 2
- */
-function solvePart2(input: ReturnType<typeof formatInput>): number {
+function solvePart2(input: Segment[]): number {
 	try {
-		// Helper to find all blocks of a specific file ID
-		const findFilePositions = (input: string[], fileId: string) => {
-			const positions: number[] = [];
-			input.forEach((val, index) => {
-				if (val === fileId) positions.push(index);
-			});
-			return positions;
-		};
+		const segments = [...input]; // Create a copy to avoid modifying input
 
-		// Helper to check if a range is all empty spaces
-		const isRangeEmpty = (input: string[], start: number, size: number) => {
-			for (let i = start; i < start + size; i++) {
-				if (input[i] !== ".") return false;
-			}
-			return true;
-		};
+		// Process segments from right to left
+		for (let i = segments.length - 1; i > 0; i--) {
+			const segmentToMove = segments[i];
 
-		const moveFile = (
-			input: string[],
-			fileId: string,
-			targetStart: number
-		) => {
-			const positions = findFilePositions(input, fileId);
-			const size = positions.length;
-			
-			// Remove file from current position
-			positions.forEach(pos => {
-				input[pos] = ".";
-			});
-			
-			// Place file in new position
-			for (let i = 0; i < size; i++) {
-				input[targetStart + i] = fileId;
-			}
-		};
+			if (segmentToMove.value !== null) {
+				// Look for an empty spot that will fit
+				for (let n = 0; n < i; n++) {
+					if (
+						segments[n].value === null &&
+						segments[n].size >= segmentToMove.size
+					) {
+						const emptySpot = segments[n];
 
-		const result = [...input];
-		
-		// Get unique file IDs and sort in descending order
-		const fileIds = [...new Set(result.filter(x => x !== "."))].sort((a, b) => 
-			parseInt(b) - parseInt(a)
-		);
+						// Found one, move it
+						segments.splice(i, 1);
+						segmentToMove.index = emptySpot.index;
+						segments.splice(n, 0, segmentToMove);
 
-		// Process each file
-		for (const fileId of fileIds) {
-			const positions = findFilePositions(result, fileId);
-			const fileSize = positions.length;
-			
-			// Find leftmost valid position
-			let targetPos = 0;
-			while (targetPos < positions[0]) {  // Only look left of current position
-				if (isRangeEmpty(result, targetPos, fileSize)) {
-					moveFile(result, fileId, targetPos);
-					break;
+						// Reduce the size of the current empty spot
+						emptySpot.size -= segmentToMove.size;
+						emptySpot.index += segmentToMove.size;
+						break;
+					}
 				}
-				targetPos++;
 			}
 		}
 
-		return calculateChecksum(result);
+		// Calculate checksum
+		let result = 0;
+		for (const segment of segments) {
+			if (segment.value !== null) {
+				for (let n = 0; n < segment.size; n++) {
+					result += (segment.index + n) * segment.value;
+				}
+			}
+		}
+
+		return result;
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
