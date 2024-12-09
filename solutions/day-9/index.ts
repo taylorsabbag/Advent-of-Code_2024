@@ -16,33 +16,25 @@ const CURRENT_YEAR = getCurrentYear();
 
 const testInput = `2333133121414131402`;
 
-type Segment = {
-	value: number | null; // null for empty space, fileId for files
-	index: number;
+type FileSystemElement = {
+	type: "Empty" | "File";
+	id?: number;
 	size: number;
 };
 
 /**
- * Formats the raw input string into segments
+ * Formats the raw input string into an array of FileSystemElements
  * @param input - Raw puzzle input string
- * @returns Array of segments representing files and empty spaces
+ * @returns Array of FileSystemElements
  */
-function formatInput(input: string): Segment[] {
+function formatInput(input: string): FileSystemElement[] {
 	try {
-		const segments: Segment[] = [];
-		let index = 0;
-		let fileId = 0;
-
-		for (let i = 0; i < input.length; i++) {
+		return Array.from({ length: input.length }, (_, i) => {
 			const size = Number(input[i]);
-			if (i % 2 === 0) {
-				segments.push({ value: fileId++, index, size });
-			} else {
-				segments.push({ value: null, index, size });
-			}
-			index += size;
-		}
-		return segments;
+			return i % 2 === 0 
+				? { type: "File", id: i / 2, size }
+				: { type: "Empty", size };
+		});
 	} catch (error) {
 		throw new AoCError(
 			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -53,38 +45,64 @@ function formatInput(input: string): Segment[] {
 	}
 }
 
-function solvePart1(input: Segment[]): number {
+/**
+ * Calculates sum of integers from low to high inclusive
+ */
+function intSum(low: number, high: number): number {
+	return ((high - low + 1) * (high + low)) / 2;
+}
+
+function solvePart1(input: string): number {
 	try {
-		const result: (number | null)[] = [];
-
-		// Fill array with initial values
-		for (const segment of input) {
-			for (let i = 0; i < segment.size; i++) {
-				result.push(segment.value);
-			}
-		}
-
-		// Move files to the left
+		const array = formatInput(input);
+		let total = 0;
 		let left = 0;
-		let right = result.length - 1;
+		let right = array.length - 1;
+		let pos = 0;
+
 		while (left <= right) {
-			if (result[left] !== null) {
+			if (left >= right) {
+				if (array[left].type === "Empty") {
+					break;
+				}
+				const { id, size } = array[left] as { id: number; size: number };
+				total += id * intSum(pos, pos + size - 1);
+				pos += size;
 				left++;
-			} else if (result[right] === null) {
+				continue;
+			}
+
+			if (array[left].type === "File") {
+				const { id, size } = array[left] as { id: number; size: number };
+				total += id * intSum(pos, pos + size - 1);
+				pos += size;
+				left++;
+				continue;
+			}
+
+			const leftSize = array[left].size;
+			
+			if (array[right].type === "Empty") {
+				right--;
+				continue;
+			}
+
+			const rightFile = array[right] as { id: number; size: number };
+			
+			if (leftSize >= rightFile.size) {
+				array[left] = { type: "Empty", size: leftSize - rightFile.size };
+				total += rightFile.id * intSum(pos, pos + rightFile.size - 1);
+				pos += rightFile.size;
 				right--;
 			} else {
-				[result[left], result[right]] = [result[right], result[left]];
+				array[right] = { type: "File", id: rightFile.id, size: rightFile.size - leftSize };
+				total += rightFile.id * intSum(pos, pos + leftSize - 1);
+				pos += leftSize;
 				left++;
-				right--;
 			}
 		}
 
-		// Calculate checksum
-		return result.reduce(
-			(acc: number, curr: number | null, index: number) =>
-				acc + (curr !== null ? curr * index : 0),
-			0,
-		);
+		return total;
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -95,21 +113,9 @@ function solvePart1(input: Segment[]): number {
 	}
 }
 
-function solvePart2(input: Segment[]): number {
+function solvePart2(input: string): number {
 	try {
-		// Convert our input format to match the array structure from OCaml solution
-		const array: Array<{ type: "Empty" | "File"; id?: number; size: number }> = [];
-		for (const segment of input) {
-			if (segment.value === null) {
-				array.push({ type: "Empty", size: segment.size });
-			} else {
-				array.push({ type: "File", id: segment.value, size: segment.size });
-			}
-		}
-
-		// Helper function to calculate sum of integers from low to high inclusive
-		const intSum = (low: number, high: number): number => 
-			((high - low + 1) * (high + low)) / 2;
+		const array = formatInput(input);
 
 		// Calculate initial positions
 		const positions: number[] = [];
@@ -120,7 +126,7 @@ function solvePart2(input: Segment[]): number {
 		}
 
 		// Initialize memoization array for empty positions
-		const emptys: Array<number | null> = Array(10).fill(1);  // Start at odd positions
+		const emptys: Array<number | null> = Array(10).fill(1);
 
 		// Helper function to find empty spot
 		const findEmpty = (size: number, maxPos: number, startPos: number): number | null => {
@@ -128,12 +134,11 @@ function solvePart2(input: Segment[]): number {
 			while (pos <= maxPos) {
 				if (array[pos].type === "Empty") {
 					if (array[pos].size >= size) {
-						// Shrink the free block
 						array[pos].size -= size;
 						return pos;
 					}
 				}
-				pos += 2; // Empty slots are at odd positions
+				pos += 2;
 			}
 			return null;
 		};
@@ -179,7 +184,7 @@ function solvePart2(input: Segment[]): number {
 runSolution(
 	CURRENT_YEAR,
 	CURRENT_DAY,
-	formatInput,
+	(input: string) => input,
 	timed(solvePart1),
 	timed(solvePart2),
 );
