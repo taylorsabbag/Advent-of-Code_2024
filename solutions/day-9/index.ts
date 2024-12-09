@@ -14,6 +14,8 @@ import {
 const CURRENT_DAY = extractDayNumber(import.meta.url);
 const CURRENT_YEAR = getCurrentYear();
 
+const testInput = `2333133121414131402`;
+
 type Segment = {
 	value: number | null; // null for empty space, fileId for files
 	index: number;
@@ -95,31 +97,49 @@ function solvePart1(input: Segment[]): number {
 
 function solvePart2(input: Segment[]): number {
 	try {
-		const segments = [...input]; // Create a copy to avoid modifying input
+		type EmptySpace = { size: number; index: number };
+		const emptySpaces: EmptySpace[] = [];
+		const segments = [...input];
 
-		// Process segments from right to left
-		for (let i = segments.length - 1; i > 0; i--) {
-			const segmentToMove = segments[i];
+		// Collect empty spaces
+		for (const segment of segments) {
+			if (segment.value === null) {
+				emptySpaces.push({ size: segment.size, index: segment.index });
+			}
+		}
 
-			if (segmentToMove.value !== null) {
-				// Look for an empty spot that will fit
-				for (let n = 0; n < i; n++) {
-					if (
-						segments[n].value === null &&
-						segments[n].size >= segmentToMove.size
-					) {
-						const emptySpot = segments[n];
+		// Sort empty spaces by index
+		emptySpaces.sort((a, b) => a.index - b.index);
 
-						// Found one, move it
-						segments.splice(i, 1);
-						segmentToMove.index = emptySpot.index;
-						segments.splice(n, 0, segmentToMove);
+		// Process files from highest ID to lowest
+		for (let i = segments.length - 1; i >= 0; i--) {
+			const segment = segments[i];
+			if (segment.value === null) continue;
 
-						// Reduce the size of the current empty spot
-						emptySpot.size -= segmentToMove.size;
-						emptySpot.index += segmentToMove.size;
-						break;
-					}
+			// Find first empty space that's both:
+			// 1. Large enough to fit the file
+			// 2. Located to the left of the current file
+			let bestFitIndex = -1;
+			for (let j = 0; j < emptySpaces.length; j++) {
+				const space = emptySpaces[j];
+				if (space.size >= segment.size && space.index < segment.index) {
+					bestFitIndex = j;
+					break;  // Take the first (leftmost) valid space
+				}
+			}
+
+			if (bestFitIndex !== -1) {
+				const space = emptySpaces[bestFitIndex];
+				// Update segment position
+				segment.index = space.index;
+				
+				// Update empty space
+				space.size -= segment.size;
+				space.index += segment.size;
+				
+				// Remove empty space if fully used
+				if (space.size === 0) {
+					emptySpaces.splice(bestFitIndex, 1);
 				}
 			}
 		}
@@ -128,9 +148,10 @@ function solvePart2(input: Segment[]): number {
 		let result = 0;
 		for (const segment of segments) {
 			if (segment.value !== null) {
-				for (let n = 0; n < segment.size; n++) {
-					result += (segment.index + n) * segment.value;
-				}
+				const n = segment.size;
+				const a1 = segment.index * segment.value;
+				const an = (segment.index + n - 1) * segment.value;
+				result += n * (a1 + an) / 2;
 			}
 		}
 
