@@ -39,55 +39,41 @@ function formatInput(input: string) {
 	}
 }
 
-/**
- * Represents a node in the grid with its value, position, and pointers to the previous and next nodes
- */
-class Node {
-	constructor(
-		public value: number,
-		public row: number,
-		public col: number,
-		public previous: Node | null = null,
-		public next: Node | null = null,
-	) {
-		this.value = value;
-		this.row = row;
-		this.col = col;
-		this.previous = previous;
-		this.next = next;
-	}
-}
-
 const START_VALUE = 0;
 const END_VALUE = 9;
 
 /**
- * Finds all valid nine positions (as strings) reachable from a given starting node
+ * Finds all valid nine positions (as strings) reachable from a given starting position
  * @param input - 2D array of numbers representing the grid
- * @param startNode - Starting node
- * @param collection - Function to handle collection of nines (Array or Set)
+ * @param startRow - Starting row position
+ * @param startCol - Starting column position
  * @returns Array of stringified nine positions
  */
 function findNines(
 	input: ReturnType<typeof formatInput>,
-	startNode: Node,
+	startRow: number,
+	startCol: number,
 ): string[] {
 	const validNines: string[] = [];
-	const currentTrail: Node[] = [startNode];
-	
-	function explore(currentNode: Node): void {
-		if (currentNode.value === END_VALUE) {
-			validNines.push(`${currentNode.row},${currentNode.col}`);
+
+	function explore(row: number, col: number, currentValue: number): void {
+		if (currentValue === END_VALUE) {
+			validNines.push(`${row},${col}`);
 			return;
 		}
-		
-		const nextValue = currentNode.value + 1;
-		const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
-		
+
+		const nextValue = currentValue + 1;
+		const directions = [
+			[-1, 0],
+			[1, 0],
+			[0, -1],
+			[0, 1],
+		];
+
 		for (const [dRow, dCol] of directions) {
-			const newRow = currentNode.row + dRow;
-			const newCol = currentNode.col + dCol;
-			
+			const newRow = row + dRow;
+			const newCol = col + dCol;
+
 			if (
 				newRow >= 0 &&
 				newRow < input.length &&
@@ -95,28 +81,13 @@ function findNines(
 				newCol < input[0].length &&
 				input[newRow][newCol] === nextValue
 			) {
-				const newNode = new Node(nextValue, newRow, newCol, currentNode);
-				currentNode.next = newNode;
-				currentTrail.push(newNode);
-				explore(newNode);
-				currentTrail.pop();
+				explore(newRow, newCol, nextValue);
 			}
 		}
 	}
-	
-	explore(startNode);
-	return validNines;
-}
 
-function getTrailheadScore(
-	input: ReturnType<typeof formatInput>,
-	row: number,
-	col: number,
-	part: "1" | "2",
-): number {
-	const trailhead = new Node(input[row][col], row, col);
-	const nines = findNines(input, trailhead);
-	return part === "1" ? new Set(nines).size : nines.length;
+	explore(startRow, startCol, input[startRow][startCol]);
+	return validNines;
 }
 
 function calculateTrailheadScoreSum(
@@ -128,7 +99,10 @@ function calculateTrailheadScoreSum(
 	for (let row = 0; row < input.length; row++) {
 		for (let col = 0; col < input[row].length; col++) {
 			if (input[row][col] === START_VALUE) {
-				trailheadScoreSum += getTrailheadScore(input, row, col, part);
+				trailheadScoreSum +=
+					part === "1"
+						? new Set(findNines(input, row, col)).size
+						: findNines(input, row, col).length;
 			}
 		}
 	}
