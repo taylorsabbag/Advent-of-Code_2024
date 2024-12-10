@@ -14,6 +14,10 @@ import {
 const CURRENT_DAY = extractDayNumber(import.meta.url);
 const CURRENT_YEAR = getCurrentYear();
 
+// NOTE: Implementing memoization or early pruning turn out to be slower due to the
+// overhead of maintaining the cache and checking for early exits. Even working backwards from 9
+// to 0, the performance was worse than the straightforward approach.
+
 const testInput =
 	"89010123\n78121874\n87430965\n96549874\n45678903\n32019012\n01329801\n10456732";
 
@@ -54,66 +58,54 @@ class Node {
 	}
 }
 
+const START_VALUE = 0;
+const END_VALUE = 9;
+
 /**
- * Finds all valid trails of descending numbers starting from a given node
+ * Finds all valid nine positions (as strings) reachable from a given starting node
  * @param input - 2D array of numbers representing the grid
- * @param node - Current node being processed
- * @returns Array of arrays, each representing a valid trail ending in 9
+ * @param startNode - Starting node
+ * @param collection - Function to handle collection of nines (Array or Set)
+ * @returns Array of stringified nine positions
  */
-function findTrail(
+function findNines(
 	input: ReturnType<typeof formatInput>,
-	node: Node,
-	part: "1" | "2",
-): Node[][] {
-	const validTrails: Node[][] = [];
-	const currentTrail: Node[] = [node];
-	// Track positions of 9s we've seen to avoid duplicates in part 1
-	const seenNines: Set<string> = new Set();
-
-	function explore(currentNode: Node, trail: Node[]): void {
-		const directions = [
-			{ row: currentNode.row - 1, col: currentNode.col }, // up
-			{ row: currentNode.row + 1, col: currentNode.col }, // down
-			{ row: currentNode.row, col: currentNode.col - 1 }, // left
-			{ row: currentNode.row, col: currentNode.col + 1 }, // right
-		];
-
-		if (currentNode.value === 9) {
-			const ninePosition = `${currentNode.row},${currentNode.col}`;
-			if (part === "2" || !seenNines.has(ninePosition)) {
-				if (part === "1") {
-					seenNines.add(ninePosition);
-				}
-				validTrails.push([...trail]);
-			}
+	startNode: Node,
+): string[] {
+	const validNines: string[] = [];
+	const currentTrail: Node[] = [startNode];
+	
+	function explore(currentNode: Node): void {
+		if (currentNode.value === END_VALUE) {
+			validNines.push(`${currentNode.row},${currentNode.col}`);
 			return;
 		}
-
-		for (const direction of directions) {
-			const newRow = direction.row;
-			const newCol = direction.col;
-
+		
+		const nextValue = currentNode.value + 1;
+		const directions = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+		
+		for (const [dRow, dCol] of directions) {
+			const newRow = currentNode.row + dRow;
+			const newCol = currentNode.col + dCol;
+			
 			if (
 				newRow >= 0 &&
 				newRow < input.length &&
 				newCol >= 0 &&
-				newCol < input[0].length
+				newCol < input[0].length &&
+				input[newRow][newCol] === nextValue
 			) {
-				const newValue = input[newRow][newCol];
-
-				if (newValue === currentNode.value + 1) {
-					const newNode = new Node(newValue, newRow, newCol, currentNode, null);
-					currentNode.next = newNode;
-					trail.push(newNode);
-					explore(newNode, trail);
-					trail.pop(); // Backtrack
-				}
+				const newNode = new Node(nextValue, newRow, newCol, currentNode);
+				currentNode.next = newNode;
+				currentTrail.push(newNode);
+				explore(newNode);
+				currentTrail.pop();
 			}
 		}
 	}
-
-	explore(node, currentTrail);
-	return validTrails;
+	
+	explore(startNode);
+	return validNines;
 }
 
 function getTrailheadScore(
@@ -122,9 +114,9 @@ function getTrailheadScore(
 	col: number,
 	part: "1" | "2",
 ): number {
-	const trailhead = new Node(input[row][col], row, col, null, null);
-	const validTrails = findTrail(input, trailhead, part);
-	return validTrails.length;
+	const trailhead = new Node(input[row][col], row, col);
+	const nines = findNines(input, trailhead);
+	return part === "1" ? new Set(nines).size : nines.length;
 }
 
 function calculateTrailheadScoreSum(
@@ -135,7 +127,7 @@ function calculateTrailheadScoreSum(
 
 	for (let row = 0; row < input.length; row++) {
 		for (let col = 0; col < input[row].length; col++) {
-			if (input[row][col] === 0) {
+			if (input[row][col] === START_VALUE) {
 				trailheadScoreSum += getTrailheadScore(input, row, col, part);
 			}
 		}
