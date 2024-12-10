@@ -92,6 +92,83 @@ function findNines(
 	return validNines;
 }
 
+/**
+ * Finds all valid nine positions (as strings) reachable from a given starting position using iteration
+ * @param input - 2D array of numbers representing the grid
+ * @param startRow - Starting row position
+ * @param startCol - Starting column position
+ * @returns Array of stringified nine positions
+ */
+function findNinesIterative(
+	input: ReturnType<typeof formatInput>,
+	startRow: number,
+	startCol: number,
+): string[] {
+	const validNines: string[] = [];
+
+	// Define a state type for our queue
+	type ExplorationState = {
+		row: number;
+		col: number;
+		currentValue: number;
+	};
+
+	// Initialize queue with starting position
+	const queue: ExplorationState[] = [
+		{
+			row: startRow,
+			col: startCol,
+			currentValue: input[startRow][startCol],
+		},
+	];
+
+	// Define possible movement directions
+	const directions = [
+		[-1, 0], // up
+		[1, 0], // down
+		[0, -1], // left
+		[0, 1], // right
+	] as const;
+
+	while (queue.length > 0) {
+		const current = queue.shift();
+		if (!current) continue;
+
+		const { row, col, currentValue } = current;
+
+		// If we found a 9, add it to our results
+		if (currentValue === END_VALUE) {
+			validNines.push(`${row},${col}`);
+			continue;
+		}
+
+		const nextValue = currentValue + 1;
+
+		// Check all possible directions
+		for (const [dRow, dCol] of directions) {
+			const newRow = row + dRow;
+			const newCol = col + dCol;
+
+			// Validate new position and value
+			if (
+				newRow >= 0 &&
+				newRow < input.length &&
+				newCol >= 0 &&
+				newCol < input[0].length &&
+				input[newRow][newCol] === nextValue
+			) {
+				queue.push({
+					row: newRow,
+					col: newCol,
+					currentValue: nextValue,
+				});
+			}
+		}
+	}
+
+	return validNines;
+}
+
 function calculateTrailheadScoreSum(
 	input: ReturnType<typeof formatInput>,
 	part: "1" | "2",
