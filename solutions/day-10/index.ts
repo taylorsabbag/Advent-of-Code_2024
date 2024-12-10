@@ -18,6 +18,8 @@ const CURRENT_YEAR = getCurrentYear();
 // overhead of maintaining the cache and checking for early exits. Even working backwards from 9
 // to 0, the performance was worse than the straightforward approach.
 
+// NOTE: This is all about reachable nines!
+
 const testInput =
 	"89010123\n78121874\n87430965\n96549874\n45678903\n32019012\n01329801\n10456732";
 
