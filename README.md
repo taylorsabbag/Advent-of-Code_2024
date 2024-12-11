@@ -165,7 +165,7 @@ npm run new:all
 
 ## Caching
 
-Input files are cached in `.cache/`:
+Input files are cached in `/dist/.cache/`:
 
 - Minimizes API requests
 - Enables offline work
