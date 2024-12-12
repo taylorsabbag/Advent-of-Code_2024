@@ -141,32 +141,46 @@ const findRegion = (
 };
 
 /**
+ * Calculates the total price sum for a grid based on the specified calculation method
+ * @param input - The input grid
+ * @param calculatePrice - Function to calculate price based on region properties
+ * @returns The total price sum
+ */
+function calculateTotalPrice(
+	input: ReturnType<typeof formatInput>,
+	calculatePrice: (props: { area: number; perimeter: number; corners: number }) => number
+): number {
+	const visited = new Set<string>();
+	let priceSum = 0;
+
+	for (let row = 0; row < input.length; row++) {
+		for (let col = 0; col < input[row].length; col++) {
+			const currentCoordinate = convertCoordinateToString(row, col);
+			if (visited.has(currentCoordinate)) continue;
+
+			const regionProps = findRegion(
+				input,
+				input[row][col],
+				row,
+				col,
+				visited,
+			);
+
+			priceSum += calculatePrice(regionProps);
+		}
+	}
+
+	return priceSum;
+}
+
+/**
  * Solves part 1 of the puzzle
  * @param input - Formatted input data
  * @returns Solution to part 1
  */
 function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
-		const visited = new Set<string>();
-		let priceSum = 0;
-
-		for (let row = 0; row < input.length; row++) {
-			for (let col = 0; col < input[row].length; col++) {
-				const currentCoordinate = convertCoordinateToString(row, col);
-				if (visited.has(currentCoordinate)) continue;
-				const currentValue = input[row][col];
-				const { area, perimeter } = findRegion(
-					input,
-					currentValue,
-					row,
-					col,
-					visited,
-				);
-				priceSum += area * perimeter;
-			}
-		}
-
-		return priceSum;
+		return calculateTotalPrice(input, ({ area, perimeter }) => area * perimeter);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -184,27 +198,7 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
  */
 function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
-		const visited = new Set<string>();
-		let priceSum = 0;
-
-		for (let row = 0; row < input.length; row++) {
-			for (let col = 0; col < input[row].length; col++) {
-				const currentCoordinate = convertCoordinateToString(row, col);
-				if (visited.has(currentCoordinate)) continue;
-				
-				const { area, corners } = findRegion(
-					input,
-					input[row][col],
-					row,
-					col,
-					visited,
-				);
-				
-				priceSum += area * corners;
-			}
-		}
-
-		return priceSum;
+		return calculateTotalPrice(input, ({ area, corners }) => area * corners);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
