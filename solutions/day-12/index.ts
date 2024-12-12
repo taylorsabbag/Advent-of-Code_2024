@@ -57,18 +57,20 @@ const findRegion = (
 	startRow: number,
 	startCol: number,
 	visited: Set<string>,
-): { area: number; perimeter: number } => {
+): { area: number; perimeter: number; boundaries: Array<Set<string>> } => {
 	const currentCoordinateString = convertCoordinateToString(startRow, startCol);
 	visited.add(currentCoordinateString);
 
 	let area = 1;
 	let perimeter = 0;
+	// Track boundaries in each direction (up, right, down, left)
+	const boundaries = [new Set<string>(), new Set<string>(), new Set<string>(), new Set<string>()];
 
-	for (const [row, col] of directions2D) {
+	for (let i = 0; i < directions2D.length; i++) {
+		const [row, col] = directions2D[i];
 		const newRow = startRow + row;
 		const newCol = startCol + col;
 
-		// Check bounds and increment perimeter if out of bounds
 		if (
 			newRow < 0 ||
 			newRow >= grid.length ||
@@ -76,34 +78,72 @@ const findRegion = (
 			newCol >= grid[newRow].length
 		) {
 			perimeter++;
+			boundaries[i].add(currentCoordinateString);
 			continue;
 		}
 
 		const newCoordinateString = convertCoordinateToString(newRow, newCol);
-		// Only check unvisited cells for area expansion
-		if (!visited.has(newCoordinateString)) {
-			const newValue = grid[newRow][newCol];
-			if (newValue === currentValue) {
-				const { area: subArea, perimeter: subPerimeter } = findRegion(
-					grid,
-					currentValue,
-					newRow,
-					newCol,
-					visited,
-				);
-				area += subArea;
-				perimeter += subPerimeter;
-			}
-		}
-		
-		// Always check for perimeter, even for visited cells
-		if (grid[newRow][newCol] !== currentValue) {
+		const newValue = grid[newRow][newCol];
+
+		if (newValue !== currentValue) {
 			perimeter++;
+			boundaries[i].add(currentCoordinateString);
+		} else if (!visited.has(newCoordinateString)) {
+			const result = findRegion(
+				grid,
+				currentValue,
+				newRow,
+				newCol,
+				visited,
+			);
+			
+			area += result.area;
+			perimeter += result.perimeter;
+
+			// Merge boundary sets
+			for (let j = 0; j < 4; j++) {
+				result.boundaries[j].forEach(coord => boundaries[j].add(coord));
+			}
 		}
 	}
 
-	return { area, perimeter };
+	return { area, perimeter, boundaries };
 };
+
+function countConnectedComponents(boundary: Set<string>, grid: ReturnType<typeof formatInput>): number {
+	if (boundary.size === 0) return 0;
+	
+	const visited = new Set<string>();
+	let components = 0;
+
+	for (const coord of boundary) {
+		if (visited.has(coord)) continue;
+		
+		// Start a new component
+		components++;
+		const stack = [coord];
+		visited.add(coord);
+
+		while (stack.length > 0) {
+			const current = stack.pop()!;
+			const [row, col] = convertStringToCoordinate(current);
+
+			// Check adjacent cells in the boundary
+			for (const [dRow, dCol] of directions2D) {
+				const newRow = row + dRow;
+				const newCol = col + dCol;
+				const newCoord = convertCoordinateToString(newRow, newCol);
+				
+				if (boundary.has(newCoord) && !visited.has(newCoord)) {
+					stack.push(newCoord);
+					visited.add(newCoord);
+				}
+			}
+		}
+	}
+
+	return components;
+}
 
 /**
  * Solves part 1 of the puzzle
@@ -119,9 +159,10 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 			for (let col = 0; col < input[row].length; col++) {
 				const currentCoordinate = convertCoordinateToString(row, col);
 				if (visited.has(currentCoordinate)) continue;
+				const currentValue = input[row][col];
 				const { area, perimeter } = findRegion(
 					input,
-					input[row][col],
+					currentValue,
 					row,
 					col,
 					visited,
@@ -148,7 +189,32 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
  */
 function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
-		return 0;
+		const visited = new Set<string>();
+		let priceSum = 0;
+
+		for (let row = 0; row < input.length; row++) {
+			for (let col = 0; col < input[row].length; col++) {
+				const currentCoordinate = convertCoordinateToString(row, col);
+				if (visited.has(currentCoordinate)) continue;
+				
+				const currentValue = input[row][col];
+				const { area, boundaries } = findRegion(
+					input,
+					currentValue,
+					row,
+					col,
+					visited,
+				);
+				
+				// Count connected components in each direction's boundary
+				const sharedSides = boundaries.reduce((sum, boundary) => 
+					sum + countConnectedComponents(boundary, input), 0);
+				
+				priceSum += area * sharedSides;
+			}
+		}
+
+		return priceSum;
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -165,5 +231,4 @@ runSolution(
 	formatInput,
 	timed(solvePart1),
 	timed(solvePart2),
-	testInput, // 1206
 );
