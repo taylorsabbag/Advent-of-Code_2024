@@ -94,6 +94,15 @@ const countCorners = (
 	return cornerCount;
 };
 
+/**
+ * Finds the area, perimeter, and corners of a region
+ * @param grid - The input grid
+ * @param currentValue - The current plant type
+ * @param startRow - The starting row
+ * @param startCol - The starting column
+ * @param visited - The set of visited coordinates
+ * @returns The area, perimeter, and corners of the region
+ */
 const findRegion = (
 	grid: ReturnType<typeof formatInput>,
 	currentValue: string,
