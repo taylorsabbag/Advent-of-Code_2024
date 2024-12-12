@@ -51,99 +51,94 @@ const directions2D = [
 	[-1, 0],
 ];
 
+/**
+ * Counts corners for a cell by checking adjacent pairs of directions
+ * @param grid - The input grid
+ * @param currentValue - The current plant type
+ * @param row - Current row
+ * @param col - Current column
+ * @returns Number of corners
+ */
+const countCorners = (
+	grid: ReturnType<typeof formatInput>,
+	currentValue: string,
+	row: number,
+	col: number,
+): number => {
+	let cornerCount = 0;
+
+	// Check each pair of adjacent directions (right+down, down+left, left+up, up+right)
+	for (let i = 0; i < 4; i++) {
+		// Get current direction and next direction (wrapping around to 0)
+		const [dx1, dy1] = directions2D[i];
+		const [dx2, dy2] = directions2D[(i + 1) % 4];
+
+		// Get the values in the L-shape pattern
+		const leftCell = grid[row + dy1]?.[col + dx1];
+		const rightCell = grid[row + dy2]?.[col + dx2];
+		const middleCell = grid[row + dy1 + dy2]?.[col + dx1 + dx2];
+
+		// Case 1: Both adjacent cells are different (outer corner)
+		const isOuterCorner = leftCell !== currentValue && rightCell !== currentValue;
+
+		// Case 2: Both adjacent cells match but diagonal is different (inner corner)
+		const isInnerCorner = leftCell === currentValue && 
+							 rightCell === currentValue && 
+							 middleCell !== currentValue;
+
+		if (isOuterCorner || isInnerCorner) {
+			cornerCount++;
+		}
+	}
+
+	return cornerCount;
+};
+
 const findRegion = (
 	grid: ReturnType<typeof formatInput>,
 	currentValue: string,
 	startRow: number,
 	startCol: number,
 	visited: Set<string>,
-): { area: number; perimeter: number; boundaries: Array<Set<string>> } => {
+): { area: number; perimeter: number; corners: number } => {
 	const currentCoordinateString = convertCoordinateToString(startRow, startCol);
 	visited.add(currentCoordinateString);
 
 	let area = 1;
-	let perimeter = 0;
-	// Track boundaries in each direction (up, right, down, left)
-	const boundaries = [new Set<string>(), new Set<string>(), new Set<string>(), new Set<string>()];
+	let perimeter = 4;
+	let corners = countCorners(grid, currentValue, startRow, startCol);
 
-	for (let i = 0; i < directions2D.length; i++) {
-		const [row, col] = directions2D[i];
+	// Check neighbors for recursion and perimeter
+	for (const [row, col] of directions2D) {
 		const newRow = startRow + row;
 		const newCol = startCol + col;
 
 		if (
-			newRow < 0 ||
-			newRow >= grid.length ||
-			newCol < 0 ||
-			newCol >= grid[newRow].length
+			newRow >= 0 &&
+			newRow < grid.length &&
+			newCol >= 0 &&
+			newCol < grid[newRow].length &&
+			grid[newRow][newCol] === currentValue
 		) {
-			perimeter++;
-			boundaries[i].add(currentCoordinateString);
-			continue;
-		}
-
-		const newCoordinateString = convertCoordinateToString(newRow, newCol);
-		const newValue = grid[newRow][newCol];
-
-		if (newValue !== currentValue) {
-			perimeter++;
-			boundaries[i].add(currentCoordinateString);
-		} else if (!visited.has(newCoordinateString)) {
-			const result = findRegion(
-				grid,
-				currentValue,
-				newRow,
-				newCol,
-				visited,
-			);
+			perimeter--; // Subtract 1 for each adjacent matching plot
 			
-			area += result.area;
-			perimeter += result.perimeter;
-
-			// Merge boundary sets
-			for (let j = 0; j < 4; j++) {
-				result.boundaries[j].forEach(coord => boundaries[j].add(coord));
+			if (!visited.has(convertCoordinateToString(newRow, newCol))) {
+				const result = findRegion(
+					grid,
+					currentValue,
+					newRow,
+					newCol,
+					visited,
+				);
+				area += result.area;
+				perimeter += result.perimeter;
+				corners += result.corners;
 			}
 		}
 	}
 
-	return { area, perimeter, boundaries };
+	return { area, perimeter, corners };
 };
-
-function countConnectedComponents(boundary: Set<string>, grid: ReturnType<typeof formatInput>): number {
-	if (boundary.size === 0) return 0;
-	
-	const visited = new Set<string>();
-	let components = 0;
-
-	for (const coord of boundary) {
-		if (visited.has(coord)) continue;
-		
-		// Start a new component
-		components++;
-		const stack = [coord];
-		visited.add(coord);
-
-		while (stack.length > 0) {
-			const current = stack.pop()!;
-			const [row, col] = convertStringToCoordinate(current);
-
-			// Check adjacent cells in the boundary
-			for (const [dRow, dCol] of directions2D) {
-				const newRow = row + dRow;
-				const newCol = col + dCol;
-				const newCoord = convertCoordinateToString(newRow, newCol);
-				
-				if (boundary.has(newCoord) && !visited.has(newCoord)) {
-					stack.push(newCoord);
-					visited.add(newCoord);
-				}
-			}
-		}
-	}
-
-	return components;
-}
 
 /**
  * Solves part 1 of the puzzle
@@ -197,20 +192,15 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 				const currentCoordinate = convertCoordinateToString(row, col);
 				if (visited.has(currentCoordinate)) continue;
 				
-				const currentValue = input[row][col];
-				const { area, boundaries } = findRegion(
+				const { area, corners } = findRegion(
 					input,
-					currentValue,
+					input[row][col],
 					row,
 					col,
 					visited,
 				);
 				
-				// Count connected components in each direction's boundary
-				const sharedSides = boundaries.reduce((sum, boundary) => 
-					sum + countConnectedComponents(boundary, input), 0);
-				
-				priceSum += area * sharedSides;
+				priceSum += area * corners;
 			}
 		}
 
