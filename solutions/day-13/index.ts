@@ -33,9 +33,18 @@ function formatInput(input: string) {
 			.split("\n\n")
 			.map((line) => line.split("\n"))
 			.map(([buttonA, buttonB, prize]) => ({
-				buttonA: buttonA.split(":")[1].split(", ").map((value) => value.split("+")[1]),
-				buttonB: buttonB.split(":")[1].split(", ").map((value) => value.split("+")[1]),
-				prize: prize.split(":")[1].split(", ").map((value) => value.split("=")[1]),
+				buttonA: buttonA
+					.split(":")[1]
+					.split(", ")
+					.map((value) => value.split("+")[1]),
+				buttonB: buttonB
+					.split(":")[1]
+					.split(", ")
+					.map((value) => value.split("+")[1]),
+				prize: prize
+					.split(":")[1]
+					.split(", ")
+					.map((value) => value.split("=")[1]),
 			}))
 			.map(({ buttonA, buttonB, prize }) => ({
 				buttonA: { x: buttonA[0], y: buttonA[1] },
@@ -54,41 +63,105 @@ function formatInput(input: string) {
 
 /**
  * Checks if the prize coordinates can be reached using button combinations
- * and calculates the minimum number of button presses needed
+ * and calculates the minimum number of button presses needed.
+ * Uses Cramer's Rule to solve the system of linear equations:
+ * ```
+ * xA * a + xB * b = xP + constant  (X-axis)
+ * yA * a + yB * b = yP + constant  (Y-axis)
+ * ```
+ * Where:
+ * - a, b are the number of A and B button presses
+ * - xA, yA are the X,Y movements from button A
+ * - xB, yB are the X,Y movements from button B
+ * - xP, yP are the prize coordinates
+ * - constant is 0 for part 1, 10000000000000 for part 2
+ * 
+ * Solution exists if determinant (xA * yB - xB * yA) ≠ 0 and
+ * resulting a, b values are non-negative integers.
+ * @param xA - X coordinate of button A
+ * @param xB - X coordinate of button B
+ * @param yA - Y coordinate of button A
+ * @param yB - Y coordinate of button B
+ * @param xP - X coordinate of the prize
+ * @param yP - Y coordinate of the prize
+ * @param constant - Constant value to add to the target coordinates
  * @returns Object containing whether it's possible and the minimum button presses needed
  */
 function calculateButtonPresses(
-    xA: number,
-    xB: number,
-    yA: number,
-    yB: number,
-    xP: number,
-    yP: number
+	xA: number,
+	xB: number,
+	yA: number,
+	yB: number,
+	xP: number,
+	yP: number,
+	constant = 0,
 ): { possible: boolean; pressesA: number; pressesB: number } {
-    // Initialize result
-    const result = { possible: false, pressesA: 0, pressesB: 0 };
-    
-    // Check if either button alone reaches the target
-    if ((xA === 0 && yA === 0) || (xB === 0 && yB === 0)) {
-        return result;
-    }
+	const result = { possible: false, pressesA: 0, pressesB: 0 };
 
-    // Try combinations up to 100 presses for each button
-    for (let pressA = 0; pressA <= 100; pressA++) {
-        for (let pressB = 0; pressB <= 100; pressB++) {
-            const totalX = (xA * pressA + xB * pressB);
-            const totalY = (yA * pressA + yB * pressB);
-            
-            if (totalX === xP && totalY === yP) {
-                result.possible = true;
-                result.pressesA = pressA;
-                result.pressesB = pressB;
-                return result;
-            }
-        }
-    }
+	// Adjust target coordinates with constant
+	const targetX = xP + constant;
+	const targetY = yP + constant;
 
-    return result;
+	// Create coefficient matrix for the system of equations
+	const det = xA * yB - xB * yA;
+
+	if (det === 0) {
+		return result;
+	}
+
+	// Solve for pressesA and pressesB
+	const pressesA = (targetX * yB - xB * targetY) / det;
+	const pressesB = (xA * targetY - targetX * yA) / det;
+
+	// Check if solution is valid (positive integers)
+	if (
+		pressesA >= 0 &&
+		pressesB >= 0 &&
+		Math.floor(pressesA) === pressesA &&
+		Math.floor(pressesB) === pressesB
+	) {
+		result.possible = true;
+		result.pressesA = pressesA;
+		result.pressesB = pressesB;
+	}
+
+	return result;
+}
+
+/**
+ * Calculates the token cost based on the button presses
+ * @param input - Formatted input data
+ * @param constant - Constant value to add to the target coordinates
+ * @returns Total token cost
+ */
+function calculateTokenCost(
+	input: ReturnType<typeof formatInput>,
+	constant = 0,
+) {
+	let tokenCost = 0;
+
+	for (const { buttonA, buttonB, prize } of input) {
+		const { x: xA, y: yA } = buttonA;
+		const { x: xB, y: yB } = buttonB;
+		const { x: xP, y: yP } = prize;
+
+		const { possible, pressesA, pressesB } = calculateButtonPresses(
+			Number(xA),
+			Number(xB),
+			Number(yA),
+			Number(yB),
+			Number(xP),
+			Number(yP),
+			constant,
+		);
+
+		if (possible) {
+			tokenCost += pressesA * 3;
+			tokenCost += pressesB * 1;
+		}
+	}
+
+	return tokenCost;
 }
 
 /**
@@ -98,22 +171,7 @@ function calculateButtonPresses(
  */
 function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
-		let tokenCost = 0
-
-		for (const { buttonA, buttonB, prize } of input) {
-			const { x: xA, y: yA } = buttonA;
-			const { x: xB, y: yB } = buttonB;
-			const { x: xP, y: yP } = prize;
-
-			const { possible, pressesA, pressesB } = calculateButtonPresses(Number(xA), Number(xB), Number(yA), Number(yB), Number(xP), Number(yP));
-
-			if (possible) {
-				tokenCost += pressesA * 3
-				tokenCost += pressesB * 1
-			}
-		}
-
-		return tokenCost;
+		return calculateTokenCost(input);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -131,7 +189,7 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
  */
 function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
-		return 0;
+		return calculateTokenCost(input, 10000000000000);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
