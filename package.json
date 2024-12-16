@@ -6,9 +6,13 @@
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json",
 		"start:day": "npm run build && node --env-file=.env dist/solutions/day-$DAY/index.js",
+		"start:day:test": "npm run build && node --env-file=.env dist/solutions/day-$DAY/index.js --test",
 		"dev": "tsx watch --env-file=.env --tsconfig tsconfig.json solutions/day-$DAY/index.ts",
+		"dev:test": "tsx watch --env-file=.env --tsconfig tsconfig.json solutions/day-$DAY/index.ts --test",
 		"day": "DAY=$(date '+%-d') npm run start:day",
+		"day:test": "DAY=$(date '+%-d') npm run start:day:test",
 		"start:latest": "npm run start:day $(ls -1 solutions/day-* | sort -V | tail -n1 | grep -o '[0-9]\\+')",
+		"start:latest:test": "npm run start:day:test $(ls -1 solutions/day-* | sort -V | tail -n1 | grep -o '[0-9]\\+')",
 		"test": "echo \"Error: no test specified\" && exit 1",
 		"lint": "biome check",
 		"lint:fix": "biome check --apply",

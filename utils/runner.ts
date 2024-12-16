@@ -18,18 +18,22 @@ export default async function runSolution<T>(
 	testInput?: string,
 ): Promise<void> {
 	try {
-		const rawInput = testInput ?? (await getInput(year, day));
+		// Check for --test flag in command line arguments
+		const useTest = process.argv.includes("--test");
+		
+		// Only use testInput if both testInput is provided and --test flag is present
+		const rawInput = useTest && testInput ? testInput : await getInput(year, day);
 		const formattedInput = formatInput(rawInput);
+
+		if (useTest) {
+			console.log("Running with test input...");
+		}
 
 		const solution1 = solvePart1(formattedInput);
 		console.log("Solution 1:", solution1);
-		// const isCorrect1 = await checkAnswer(year, day, solution1.toString(), 1);
-		// console.log("Is correct 1:", isCorrect1);
 
 		const solution2 = solvePart2(formattedInput);
 		console.log("Solution 2:", solution2);
-		// const isCorrect2 = await checkAnswer(year, day, solution2.toString(), 2);
-		// console.log("Is correct 2:", isCorrect2);
 	} catch (error) {
 		console.error(
 			"Error:",
