@@ -47,20 +47,35 @@ class MazeGrid {
 	/**
 	 * Creates a new MazeGrid instance
 	 * @param input - String representation of the maze with 'S' as start, 'E' as end, and '#' as walls
+	 * @throws AoCError if the maze is invalid or start/end points are missing
 	 */
 	constructor(input: string) {
-		this.grid = input.split("\n").map(row => row.split(""));
-		this.height = this.grid.length;
-		this.width = this.grid[0].length;
-		this.start = this.findChar("S");
-		this.end = this.findChar("E");
+		try {
+			this.grid = input.split("\n").map(row => row.split(""));
+			
+			if (!this.grid.length || !this.grid[0].length) {
+				throw new Error("Empty or invalid maze structure");
+			}
+			
+			this.height = this.grid.length;
+			this.width = this.grid[0].length;
+			this.start = this.findChar("S");
+			this.end = this.findChar("E");
+		} catch (error) {
+			throw new AoCError(
+				`Failed to initialize maze: ${error instanceof Error ? error.message : "Unknown error"}`,
+				CURRENT_DAY,
+				1,
+				error instanceof Error ? error : undefined
+			);
+		}
 	}
 
 	/**
 	 * Finds the coordinates of a specific character in the maze
 	 * @param char - The character to find ('S' or 'E')
 	 * @returns Tuple of [x, y] coordinates
-	 * @throws Error if character is not found
+	 * @throws AoCError if character is not found
 	 */
 	private findChar(char: string): [number, number] {
 		for (let y = 0; y < this.height; y++) {
@@ -68,7 +83,11 @@ class MazeGrid {
 				if (this.grid[y][x] === char) return [x, y];
 			}
 		}
-		throw new Error(`Character ${char} not found`);
+		throw new AoCError(
+			`Character '${char}' not found in maze`,
+			CURRENT_DAY,
+			1
+		);
 	}
 
 	/**
@@ -84,35 +103,49 @@ class MazeGrid {
 	/**
 	 * Solves the maze finding both shortest path and number of optimal paths
 	 * @returns Object containing part1 (shortest path cost) and part2 (number of optimal paths)
+	 * @throws AoCError if no valid path is found
 	 */
 	solve(): { part1: number; part2: number } {
-		const seen = Array.from({ length: this.height }, () =>
-			Array.from({ length: this.width }, () => Array(4).fill(Number.MAX_SAFE_INTEGER))
-		);
+		try {
+			const seen = Array.from({ length: this.height }, () =>
+				Array.from({ length: this.width }, () => Array(4).fill(Number.MAX_SAFE_INTEGER))
+			);
 
-		const buckets: Position[][] = Array(1001).fill(null).map(() => []);
-		buckets[0].push({ x: this.start[0], y: this.start[1], direction: 0, cost: 0 });
-		seen[this.start[1]][this.start[0]][0] = 0;
+			const buckets: Position[][] = Array(1001).fill(null).map(() => []);
+			buckets[0].push({ x: this.start[0], y: this.start[1], direction: 0, cost: 0 });
+			seen[this.start[1]][this.start[0]][0] = 0;
 
-		let minCost = Number.MAX_SAFE_INTEGER;
-		let currentCost = 0;
+			let minCost = Number.MAX_SAFE_INTEGER;
+			let currentCost = 0;
 
-		while (minCost === Number.MAX_SAFE_INTEGER && currentCost < Number.MAX_SAFE_INTEGER) {
-			const bucket = buckets[currentCost % 1001];
-			
-			while (bucket.length > 0) {
-				const current = bucket.pop()!;
-				if (current.x === this.end[0] && current.y === this.end[1]) {
-					minCost = current.cost;
-					break;
+			while (minCost === Number.MAX_SAFE_INTEGER && currentCost < Number.MAX_SAFE_INTEGER) {
+				const bucket = buckets[currentCost % 1001];
+				
+				while (bucket.length > 0) {
+					const current = bucket.pop()!;
+					if (current.x === this.end[0] && current.y === this.end[1]) {
+						minCost = current.cost;
+						break;
+					}
+					this.processNeighbors(current, seen, buckets);
 				}
-				this.processNeighbors(current, seen, buckets);
+				currentCost++;
 			}
-			currentCost++;
-		}
 
-		const pathCount = this.countOptimalPaths(minCost, seen);
-		return { part1: minCost, part2: pathCount };
+			if (minCost === Number.MAX_SAFE_INTEGER) {
+				throw new Error("No valid path found from start to end");
+			}
+
+			const pathCount = this.countOptimalPaths(minCost, seen);
+			return { part1: minCost, part2: pathCount };
+		} catch (error) {
+			throw new AoCError(
+				`Failed to solve maze: ${error instanceof Error ? error.message : "Unknown error"}`,
+				CURRENT_DAY,
+				1,
+				error instanceof Error ? error : undefined
+			);
+		}
 	}
 
 	/**
@@ -237,20 +270,40 @@ function formatInput(input: string): string {
  * Solves part 1 of the puzzle - finds the shortest path cost
  * @param input - Formatted input string
  * @returns Minimum cost to reach the end
+ * @throws AoCError if solution cannot be found
  */
 function solvePart1(input: string): number {
-	const maze = new MazeGrid(input);
-	return maze.solve().part1;
+	try {
+		const maze = new MazeGrid(input);
+		return maze.solve().part1;
+	} catch (error) {
+		throw new AoCError(
+			`Failed to solve part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			1,
+			error instanceof Error ? error : undefined
+		);
+	}
 }
 
 /**
  * Solves part 2 of the puzzle - counts optimal paths
  * @param input - Formatted input string
  * @returns Number of positions that are part of optimal paths
+ * @throws AoCError if solution cannot be found
  */
 function solvePart2(input: string): number {
-	const maze = new MazeGrid(input);
-	return maze.solve().part2;
+	try {
+		const maze = new MazeGrid(input);
+		return maze.solve().part2;
+	} catch (error) {
+		throw new AoCError(
+			`Failed to solve part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
+			CURRENT_DAY,
+			2,
+			error instanceof Error ? error : undefined
+		);
+	}
 }
 
 const testInput = `#################
