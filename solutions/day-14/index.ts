@@ -169,9 +169,9 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 		 * @returns Modular multiplicative inverse
 		 */
 		function modInverse(a: number, m: number): number {
-			a = ((a % m) + m) % m;
+			const normalizedA = ((a % m) + m) % m;
 			for (let x = 1; x < m; x++) {
-				if ((a * x) % m === 1) {
+				if ((normalizedA * x) % m === 1) {
 					return x;
 				}
 			}
