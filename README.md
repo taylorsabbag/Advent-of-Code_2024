@@ -1,3 +1,6 @@
+<!-- markdownlint-disable MD033 -->
+<!-- markdownlint-disable MD041-->
+
 <div align="center">
 
 # 🎄 Advent of Code 2024 Solutions
@@ -57,7 +60,7 @@ My solutions to the [Advent of Code 2024](https://adventofcode.com/2024) challen
 
 ## Project Structure
 
-```
+```txt
 advent-of-code_2024/
 ├── solutions/           # Daily puzzle solutions
 │   ├── day-{N}/        # Individual day solutions (1-25)
@@ -93,7 +96,7 @@ advent-of-code_2024/
 
 Each day's solution follows a consistent pattern:
 
-```
+```txt
 solutions/day-N/
 └── index.ts           # Main solution file containing:
     ├── formatInput()  # Input parser
