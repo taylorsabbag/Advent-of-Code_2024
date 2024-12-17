@@ -148,19 +148,6 @@ function executeInstruction(
 		(() => { throw new Error(`Invalid opcode: ${opcode}`); })();
 }
 
-/**
- * Creates a new register state with an initial value for register A
- * @param value - Initial value for register A
- * @returns New register state with B and C initialized to 0
- */
-function createInitialState(value: bigint): RegisterState {
-	return {
-		registerA: value,
-		registerB: 0n,
-		registerC: 0n,
-	};
-}
-
 function solvePart1(input: ReturnType<typeof formatInput>): string {
 	try {
 		const program = input.programArray;
