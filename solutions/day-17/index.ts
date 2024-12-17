@@ -54,13 +54,6 @@ type ExecutionResult = {
  */
 type RegisterState = Record<"registerA" | "registerB" | "registerC", bigint>;
 
-type InputFormat = {
-	registerA: number;
-	registerB: number;
-	registerC: number;
-	programArray: number[];
-};
-
 function formatInput(input: string) {
 	const [registers, program] = input.split("\n\n");
 	const registerEntries = registers.split("\n").map((line) => {
@@ -223,21 +216,20 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 	 * @param state - Initial register state
 	 * @returns The output value or undefined if no output is produced
 	 */
-	function runUntilOutput(state: RegisterState): number | undefined {
+	function runUntilOutput(registerA: bigint): number | undefined {
 		let instructionPointer = 0;
+		const state = { registerA, registerB: 0n, registerC: 0n };
 		
 		while (instructionPointer < program.length) {
 			const { nextPointer, output } = executeInstruction(
-				program[instructionPointer] as OpCode,
-				program[instructionPointer + 1],
-				state,
-				instructionPointer,
+					program[instructionPointer] as OpCode,
+					program[instructionPointer + 1],
+					state,
+					instructionPointer,
 			);
-
 			if (output !== undefined) return output;
 			instructionPointer = nextPointer;
 		}
-		return undefined;
 	}
 
 	/**
@@ -252,14 +244,12 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 			return true;
 		}
 
-		const targetOutput = program[programIndex];
-
 		for (let digit = 0; digit < MAX_DIGIT; digit++) {
 			const testValue = (accumulator << BITS_PER_DIGIT) | BigInt(digit);
-			const output = runUntilOutput(createInitialState(testValue));
+			const output = runUntilOutput(testValue);
 			
-			if (output !== targetOutput) continue;
-			if (findValidSequence(programIndex - 1, testValue)) return true;
+			if (output === program[programIndex] && 
+					findValidSequence(programIndex - 1, testValue)) return true;
 		}
 		return false;
 	}
