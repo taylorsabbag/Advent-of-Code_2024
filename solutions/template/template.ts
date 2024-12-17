@@ -38,6 +38,7 @@ function formatInput(input: string) {
  * Solves part 1 of the puzzle
  * @param input - Formatted input data
  * @returns Solution to part 1
+ * @throws AoCError if solution cannot be found
  */
 function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
@@ -56,6 +57,7 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
  * Solves part 2 of the puzzle
  * @param input - Formatted input data
  * @returns Solution to part 2
+ * @throws AoCError if solution cannot be found
  */
 function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
@@ -76,4 +78,5 @@ runSolution(
 	formatInput,
 	timed(solvePart1),
 	timed(solvePart2),
+	testInput,
 );
