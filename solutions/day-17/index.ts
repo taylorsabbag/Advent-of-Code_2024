@@ -3,13 +3,7 @@
  * @see https://adventofcode.com/2024/day/17
  */
 
-import {
-	runner as runSolution,
-	extractDayNumber,
-	getCurrentYear,
-	timed,
-	AoCError,
-} from "@utils/index.js";
+import { AoCError, extractDayNumber, getCurrentYear, runner as runSolution, timed } from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
 const CURRENT_YEAR = getCurrentYear();
@@ -21,208 +15,124 @@ Register C: 0
 Program: 0,1,5,4,3,0
 `;
 
-let REGISTER_A = 0;
-let REGISTER_B = 0;
-let REGISTER_C = 0;
-
-/**
- * Formats the raw input string into the required data structure
- * @param input - Raw puzzle input string
- * @returns Formatted input data
- */
-function formatInput(input: string) {
-	try {
-		const [registers, program] = input.split("\n\n");
-		const [registerA, registerB, registerC] = registers.split("\n");
-		REGISTER_A = Number.parseInt(registerA.split(": ")[1]);
-		REGISTER_B = Number.parseInt(registerB.split(": ")[1]);
-		REGISTER_C = Number.parseInt(registerC.split(": ")[1]);
-
-		const programNumbers = program.replace("Program: ", "").trim();
-		const numbers = programNumbers
-			.split(",")
-			.map((value) => Number.parseInt(value));
-
-		const programArray = numbers.reduce<[number, number][]>(
-			(acc, value, index) => {
-				if (index % 2 === 0) {
-					acc.push([value, numbers[index + 1]]);
-				}
-				return acc;
-			},
-			[],
-		);
-		return programArray;
-	} catch (error) {
-		throw new AoCError(
-			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
-			CURRENT_DAY,
-			1,
-			error instanceof Error ? error : undefined,
-		);
-	}
-}
-
 enum OpCode {
-	ADV = 0,
-	BXL = 1,
-	BST = 2,
-	JNZ = 3,
-	BXC = 4,
-	OUT = 5,
-	BDV = 6,
-	CDV = 7,
+	ADV = 0, // Advance
+	BXL = 1, // B XOR Literal
+	BST = 2, // B Store
+	JNZ = 3, // Jump if Not Zero
+	BXC = 4, // B XOR C
+	OUT = 5, // Output
+	BDV = 6, // B Divide
+	CDV = 7, // C Divide
 }
 
-const opCodeMap: Record<OpCode, string> = {
-	[OpCode.ADV]: "ADV",
-	[OpCode.BXL]: "BXL",
-	[OpCode.BST]: "BST",
-	[OpCode.JNZ]: "JNZ",
-	[OpCode.BXC]: "BXC",
-	[OpCode.OUT]: "OUT",
-	[OpCode.BDV]: "BDV",
-	[OpCode.CDV]: "CDV",
-};
+type RegisterState = Record<"registerA" | "registerB" | "registerC", bigint>;
 
-let POINTER = 0;
-const POINTER_INCREMENT = 1;
+function formatInput(input: string) {
+	const [registers, program] = input.split("\n\n");
+	const registerEntries = registers.split("\n").map(line => {
+		const [name, value] = line.split(": ");
+		return [name.replace("Register ", "").toLowerCase(), Number(value)];
+	});
+	
+	return {
+		registerA: registerEntries[0][1],
+		registerB: registerEntries[1][1],
+		registerC: registerEntries[2][1],
+		programArray: program.replace("Program: ", "").trim().split(",").map(Number)
+	};
+}
 
-const movePointer = () => {
-	POINTER += POINTER_INCREMENT;
-};
+function getOperandValue(operand: number, state: RegisterState): bigint {
+	const operandMap: Record<number, bigint> = {
+		0: 0n, 1: 1n, 2: 2n, 3: 3n,
+		4: state.registerA,
+		5: state.registerB,
+		6: state.registerC
+	};
+	return operandMap[operand] ?? 0n;
+}
 
-type OperandIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6;
+function executeInstruction(
+	opcode: OpCode,
+	operand: number,
+	state: RegisterState,
+	instructionPointer: number
+): { nextPointer: number; output?: number } {
+	const operandValue = getOperandValue(operand, state);
+	const nextPointer = instructionPointer + 2;
 
-const getComboOperandValue = (operand: OperandIndex): number => {
-	switch (operand) {
-		case 0: return 0;
-		case 1: return 1;
-		case 2: return 2;
-		case 3: return 3;
-		case 4: return REGISTER_A;
-		case 5: return REGISTER_B;
-		case 6: return REGISTER_C;
-		default: throw new Error(`Invalid combo operand: ${operand}`);
-	}
-};
-
-const adv = (comboOperand: OperandIndex) => {
-	const result = Math.trunc(REGISTER_A / 2 ** getComboOperandValue(comboOperand));
-	REGISTER_A = result;
-	movePointer();
-	console.log(`Result: ${result}`);
-	return result;
-};
-
-const bxl = (literalOperand: number) => {
-	const result = REGISTER_B ^ literalOperand;
-	REGISTER_B = result;
-	movePointer();
-	return result;
-};
-
-const bst = (comboOperand: OperandIndex) => {
-	const result = getComboOperandValue(comboOperand) % 8;
-	REGISTER_B = result;
-	movePointer();
-	return result;
-};
-
-const jnz = (literalOperand: number) => {
-	if (REGISTER_A !== 0) {
-		POINTER = literalOperand;
-	} else {
-		movePointer();
-	}
-};
-
-const bxc = (operand: number) => {
-	const result = REGISTER_B ^ REGISTER_C;
-	REGISTER_B = result;
-	movePointer();
-	return result;
-};
-
-const out = (comboOperand: OperandIndex) => {
-	const value = getComboOperandValue(comboOperand);
-	const result = value % 8;
-	movePointer();
-	console.log(`Result: ${result}`);
-	return result;
-};
-
-const bdv = (comboOperand: OperandIndex) => {
-	const result = Math.trunc(REGISTER_A / 2 ** getComboOperandValue(comboOperand));
-	REGISTER_B = result;
-	movePointer();
-	return result;
-};
-
-const cdv = (comboOperand: OperandIndex) => {
-	const result = Math.trunc(REGISTER_A / 2 ** getComboOperandValue(comboOperand));
-	REGISTER_C = result;
-	movePointer();
-	return result;
-};
-
-const opCodeReducer = (opCode: OpCode) => {
-	const opCodeString = opCodeMap[opCode];
-	if (!opCodeString) {
-		throw new Error(`Invalid opcode: ${opCode}`);
-	}
-
-	switch (opCodeString) {
-		case "ADV":
-			return adv;
-		case "BXL":
-			return bxl;
-		case "BST":
-			return bst;
-		case "JNZ":
-			return jnz;
-		case "BXC":
-			return bxc;
-		case "OUT":
-			return out;
-		case "BDV":
-			return bdv;
-		case "CDV":
-			return cdv;
-		default:
-			throw new Error(`Invalid opcode: ${opCode}`);
-	}
-};
-
-const runProgram = (program: [number, number][]) => {
-	const outputs: number[] = [];
-
-	while (POINTER < program.length) {
-		const [opCode, operand] = program[POINTER];
-		const opCodeFunction = opCodeReducer(opCode as OpCode);
-		console.log(
-			`Running ${opCodeMap[opCode as OpCode]} (${opCode}) with operand ${operand}`,
-		);
-		const result = opCodeFunction(operand as OperandIndex);
-		console.log(`Pointer: ${POINTER}, Program: ${program[POINTER]}\n`);
-
-		if (opCode === OpCode.OUT) {
-			outputs.push(result as number);
+	const instructions: Record<OpCode, () => { nextPointer: number; output?: number }> = {
+		[OpCode.ADV]: () => {
+			state.registerA >>= operandValue;
+			return { nextPointer };
+		},
+		[OpCode.BXL]: () => {
+			state.registerB ^= BigInt(operand);
+			return { nextPointer };
+		},
+		[OpCode.BST]: () => {
+			state.registerB = operandValue & 7n;
+			return { nextPointer };
+		},
+		[OpCode.JNZ]: () => ({
+			nextPointer: state.registerA !== 0n ? operand : nextPointer
+		}),
+		[OpCode.BXC]: () => {
+			state.registerB ^= state.registerC;
+			return { nextPointer };
+		},
+		[OpCode.OUT]: () => ({
+			nextPointer,
+			output: Number(operandValue & 7n)
+		}),
+		[OpCode.BDV]: () => {
+			state.registerB = state.registerA >> operandValue;
+			return { nextPointer };
+		},
+		[OpCode.CDV]: () => {
+			state.registerC = state.registerA >> operandValue;
+			return { nextPointer };
 		}
+	};
+
+	const instruction = instructions[opcode];
+	if (!instruction) {
+		throw new Error(`Invalid opcode: ${opcode}`);
 	}
+	return instruction();
+}
 
-	return outputs.join(",");
-};
-
-/**
- * Solves part 1 of the puzzle
- * @param input - Formatted input data
- * @returns Solution to part 1
- */
 function solvePart1(input: ReturnType<typeof formatInput>): string {
 	try {
-		const result = runProgram(input);
-		return result;
+		const program = input.programArray;
+		const state: RegisterState = {
+			registerA: BigInt(input.registerA),
+			registerB: BigInt(input.registerB),
+			registerC: BigInt(input.registerC),
+		};
+		const outputs: number[] = [];
+		let instructionPointer = 0;
+
+		while (instructionPointer < program.length) {
+			const opcode = program[instructionPointer];
+			const operand = program[instructionPointer + 1];
+
+			const result = executeInstruction(
+				opcode as OpCode,
+				operand,
+				state,
+				instructionPointer,
+			);
+
+			if (result.output !== undefined) {
+				outputs.push(result.output);
+			}
+
+			instructionPointer = result.nextPointer;
+		}
+
+		return outputs.join(",");
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -233,14 +143,63 @@ function solvePart1(input: ReturnType<typeof formatInput>): string {
 	}
 }
 
-/**
- * Solves part 2 of the puzzle
- * @param input - Formatted input data
- * @returns Solution to part 2
- */
 function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
-		return 0;
+		const program = input.programArray.flat();
+		let resultValue = 0n;
+
+		function findValidSequence(
+			programIndex: number,
+			accumulator: bigint,
+		): boolean {
+			if (programIndex < 0) {
+				resultValue = accumulator;
+				return true;
+			}
+
+			for (let digit = 0; digit < 8; digit++) {
+				const state: RegisterState = {
+					registerA: (accumulator << 3n) | BigInt(digit),
+					registerB: 0n,
+					registerC: 0n,
+				};
+				let instructionPointer = 0;
+				let outputValue: number | undefined;
+
+				while (instructionPointer < program.length) {
+					const opcode = program[instructionPointer];
+					const operand = program[instructionPointer + 1];
+
+					const result = executeInstruction(
+						opcode as OpCode,
+						operand,
+						state,
+						instructionPointer,
+					);
+
+					if (result.output !== undefined) {
+						outputValue = result.output;
+						break;
+					}
+
+					instructionPointer = result.nextPointer;
+				}
+
+				if (
+					outputValue === program[programIndex] &&
+					findValidSequence(
+						programIndex - 1,
+						(accumulator << 3n) | BigInt(digit),
+					)
+				) {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		findValidSequence(program.length - 1, 0n);
+		return Number(resultValue);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -251,6 +210,7 @@ function solvePart2(input: ReturnType<typeof formatInput>): number {
 	}
 }
 
+// Execute solution
 runSolution(
 	CURRENT_YEAR,
 	CURRENT_DAY,
