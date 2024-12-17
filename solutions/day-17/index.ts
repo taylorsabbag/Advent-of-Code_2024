@@ -3,7 +3,13 @@
  * @see https://adventofcode.com/2024/day/17
  */
 
-import { AoCError, extractDayNumber, getCurrentYear, runner as runSolution, timed } from "@utils/index.js";
+import {
+	AoCError,
+	extractDayNumber,
+	getCurrentYear,
+	runner as runSolution,
+	timed,
+} from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
 const CURRENT_YEAR = getCurrentYear();
@@ -26,43 +32,92 @@ enum OpCode {
 	CDV = 7, // C Divide
 }
 
+/**
+ * Constants for bitwise operations in the virtual machine
+ */
+const BITS_PER_DIGIT = 3n;
+const DIGIT_MASK = 7n;
+const MAX_DIGIT = 8;
+
+/**
+ * Represents the result of executing a single instruction
+ * @property nextPointer - The next instruction pointer position
+ * @property output - Optional output value produced by the instruction
+ */
+type ExecutionResult = {
+	nextPointer: number;
+	output?: number;
+};
+
+/**
+ * Represents the state of the virtual machine's registers
+ */
 type RegisterState = Record<"registerA" | "registerB" | "registerC", bigint>;
+
+type InputFormat = {
+	registerA: number;
+	registerB: number;
+	registerC: number;
+	programArray: number[];
+};
 
 function formatInput(input: string) {
 	const [registers, program] = input.split("\n\n");
-	const registerEntries = registers.split("\n").map(line => {
+	const registerEntries = registers.split("\n").map((line) => {
 		const [name, value] = line.split(": ");
 		return [name.replace("Register ", "").toLowerCase(), Number(value)];
 	});
-	
+
 	return {
 		registerA: registerEntries[0][1],
 		registerB: registerEntries[1][1],
 		registerC: registerEntries[2][1],
-		programArray: program.replace("Program: ", "").trim().split(",").map(Number)
+		programArray: program
+			.replace("Program: ", "")
+			.trim()
+			.split(",")
+			.map(Number),
 	};
 }
 
+/**
+ * Gets the value of an operand based on the current register state
+ * @param operand - The operand value (0-6)
+ * @param state - Current state of the registers
+ * @returns The resolved operand value
+ */
 function getOperandValue(operand: number, state: RegisterState): bigint {
 	const operandMap: Record<number, bigint> = {
-		0: 0n, 1: 1n, 2: 2n, 3: 3n,
+		0: 0n,
+		1: 1n,
+		2: 2n,
+		3: 3n,
 		4: state.registerA,
 		5: state.registerB,
-		6: state.registerC
+		6: state.registerC,
 	};
 	return operandMap[operand] ?? 0n;
 }
 
+/**
+ * Executes a single instruction in the virtual machine
+ * @param opcode - The operation to perform
+ * @param operand - The operand for the operation
+ * @param state - Current state of the registers
+ * @param instructionPointer - Current position in the program
+ * @returns Result containing next instruction pointer and optional output
+ * @throws Error if opcode is invalid
+ */
 function executeInstruction(
 	opcode: OpCode,
 	operand: number,
 	state: RegisterState,
-	instructionPointer: number
-): { nextPointer: number; output?: number } {
+	instructionPointer: number,
+): ExecutionResult {
 	const operandValue = getOperandValue(operand, state);
 	const nextPointer = instructionPointer + 2;
 
-	const instructions: Record<OpCode, () => { nextPointer: number; output?: number }> = {
+	const instructions = {
 		[OpCode.ADV]: () => {
 			state.registerA >>= operandValue;
 			return { nextPointer };
@@ -72,11 +127,11 @@ function executeInstruction(
 			return { nextPointer };
 		},
 		[OpCode.BST]: () => {
-			state.registerB = operandValue & 7n;
+			state.registerB = operandValue & DIGIT_MASK;
 			return { nextPointer };
 		},
 		[OpCode.JNZ]: () => ({
-			nextPointer: state.registerA !== 0n ? operand : nextPointer
+			nextPointer: state.registerA !== 0n ? operand : nextPointer,
 		}),
 		[OpCode.BXC]: () => {
 			state.registerB ^= state.registerC;
@@ -84,7 +139,7 @@ function executeInstruction(
 		},
 		[OpCode.OUT]: () => ({
 			nextPointer,
-			output: Number(operandValue & 7n)
+			output: Number(operandValue & DIGIT_MASK),
 		}),
 		[OpCode.BDV]: () => {
 			state.registerB = state.registerA >> operandValue;
@@ -93,23 +148,33 @@ function executeInstruction(
 		[OpCode.CDV]: () => {
 			state.registerC = state.registerA >> operandValue;
 			return { nextPointer };
-		}
-	};
+		},
+	} satisfies Record<OpCode, () => ExecutionResult>;
 
-	const instruction = instructions[opcode];
-	if (!instruction) {
-		throw new Error(`Invalid opcode: ${opcode}`);
-	}
-	return instruction();
+	return instructions[opcode]?.() ?? 
+		(() => { throw new Error(`Invalid opcode: ${opcode}`); })();
+}
+
+/**
+ * Creates a new register state with an initial value for register A
+ * @param value - Initial value for register A
+ * @returns New register state with B and C initialized to 0
+ */
+function createInitialState(value: bigint): RegisterState {
+	return {
+		registerA: value,
+		registerB: 0n,
+		registerC: 0n,
+	};
 }
 
 function solvePart1(input: ReturnType<typeof formatInput>): string {
 	try {
 		const program = input.programArray;
 		const state: RegisterState = {
-			registerA: BigInt(input.registerA),
-			registerB: BigInt(input.registerB),
-			registerC: BigInt(input.registerC),
+				registerA: BigInt(input.registerA),
+				registerB: BigInt(input.registerB),
+				registerC: BigInt(input.registerC),
 		};
 		const outputs: number[] = [];
 		let instructionPointer = 0;
@@ -143,74 +208,66 @@ function solvePart1(input: ReturnType<typeof formatInput>): string {
 	}
 }
 
+/**
+ * Solves part 2 by finding the smallest input value that generates
+ * the target program sequence
+ * @param input - Formatted input containing program and initial register values
+ * @returns The smallest input value that generates the target sequence
+ */
 function solvePart2(input: ReturnType<typeof formatInput>): number {
-	try {
-		const program = input.programArray.flat();
-		let resultValue = 0n;
+	const program = input.programArray.flat();
+	let resultValue = 0n;
 
-		function findValidSequence(
-			programIndex: number,
-			accumulator: bigint,
-		): boolean {
-			if (programIndex < 0) {
-				resultValue = accumulator;
-				return true;
-			}
+	/**
+	 * Executes the program until an output is produced
+	 * @param state - Initial register state
+	 * @returns The output value or undefined if no output is produced
+	 */
+	function runUntilOutput(state: RegisterState): number | undefined {
+		let instructionPointer = 0;
+		
+		while (instructionPointer < program.length) {
+			const { nextPointer, output } = executeInstruction(
+				program[instructionPointer] as OpCode,
+				program[instructionPointer + 1],
+				state,
+				instructionPointer,
+			);
 
-			for (let digit = 0; digit < 8; digit++) {
-				const state: RegisterState = {
-					registerA: (accumulator << 3n) | BigInt(digit),
-					registerB: 0n,
-					registerC: 0n,
-				};
-				let instructionPointer = 0;
-				let outputValue: number | undefined;
+			if (output !== undefined) return output;
+			instructionPointer = nextPointer;
+		}
+		return undefined;
+	}
 
-				while (instructionPointer < program.length) {
-					const opcode = program[instructionPointer];
-					const operand = program[instructionPointer + 1];
-
-					const result = executeInstruction(
-						opcode as OpCode,
-						operand,
-						state,
-						instructionPointer,
-					);
-
-					if (result.output !== undefined) {
-						outputValue = result.output;
-						break;
-					}
-
-					instructionPointer = result.nextPointer;
-				}
-
-				if (
-					outputValue === program[programIndex] &&
-					findValidSequence(
-						programIndex - 1,
-						(accumulator << 3n) | BigInt(digit),
-					)
-				) {
-					return true;
-				}
-			}
-			return false;
+	/**
+	 * Recursively finds a sequence of digits that produces the target program sequence
+	 * @param programIndex - Current position in the program being matched
+	 * @param accumulator - Built-up value of found digits
+	 * @returns true if a valid sequence is found, false otherwise
+	 */
+	function findValidSequence(programIndex: number, accumulator: bigint): boolean {
+		if (programIndex < 0) {
+			resultValue = accumulator;
+			return true;
 		}
 
-		findValidSequence(program.length - 1, 0n);
-		return Number(resultValue);
-	} catch (error) {
-		throw new AoCError(
-			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
-			CURRENT_DAY,
-			2,
-			error instanceof Error ? error : undefined,
-		);
+		const targetOutput = program[programIndex];
+
+		for (let digit = 0; digit < MAX_DIGIT; digit++) {
+			const testValue = (accumulator << BITS_PER_DIGIT) | BigInt(digit);
+			const output = runUntilOutput(createInitialState(testValue));
+			
+			if (output !== targetOutput) continue;
+			if (findValidSequence(programIndex - 1, testValue)) return true;
+		}
+		return false;
 	}
+
+	findValidSequence(program.length - 1, 0n);
+	return Number(resultValue);
 }
 
-// Execute solution
 runSolution(
 	CURRENT_YEAR,
 	CURRENT_DAY,
