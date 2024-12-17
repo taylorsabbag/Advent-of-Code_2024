@@ -14,4 +14,12 @@ export { getCachedInput, cacheInput } from "@utils/cache.js";
 export { default as getInput } from "@utils/getInput.js";
 export { default as timed } from "@utils/performance.js";
 export { default as AoCError } from "@utils/errors.js";
-export { createGrid, convertTupleToString, convertStringToTuple } from "@utils/helpers.js";
+export {
+	createGrid,
+	convertTupleToString,
+	convertStringToTuple,
+	GRID_DIRECTIONS,
+	isInBounds,
+	COORDINATE_CONVERTERS,
+	createSolutionWrapper,
+} from "@utils/helpers.js";

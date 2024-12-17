@@ -4,11 +4,12 @@
  */
 
 import {
-	runner as runSolution,
+	AoCError,
+	createSolutionWrapper,
 	extractDayNumber,
 	getCurrentYear,
+	runner as runSolution,
 	timed,
-	AoCError,
 } from "@utils/index.js";
 
 const CURRENT_DAY = extractDayNumber(import.meta.url);
@@ -40,18 +41,17 @@ function formatInput(input: string) {
  * @returns Solution to part 1
  * @throws AoCError if solution cannot be found
  */
-function solvePart1(input: ReturnType<typeof formatInput>): number {
-	try {
-		return 0;
-	} catch (error) {
-		throw new AoCError(
-			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
-			CURRENT_DAY,
-			1,
-			error instanceof Error ? error : undefined,
-		);
-	}
-}
+const solvePart1 = createSolutionWrapper<
+	ReturnType<typeof formatInput>,
+	number
+>(
+	CURRENT_DAY,
+	1,
+	"solving part 1",
+)((input) => {
+	// Your solution logic here
+	return 0;
+});
 
 /**
  * Solves part 2 of the puzzle
@@ -59,18 +59,18 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
  * @returns Solution to part 2
  * @throws AoCError if solution cannot be found
  */
-function solvePart2(input: ReturnType<typeof formatInput>): number {
-	try {
-		return 0;
-	} catch (error) {
-		throw new AoCError(
-			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
-			CURRENT_DAY,
-			2,
-			error instanceof Error ? error : undefined,
-		);
-	}
-}
+const solvePart2 = createSolutionWrapper<
+	ReturnType<typeof formatInput>,
+	number
+>(
+	CURRENT_DAY,
+	2,
+	"solving part 2",
+)((input) => {
+	// Your solution logic here
+	return 0;
+});
+
 
 runSolution(
 	CURRENT_YEAR,
