@@ -50,9 +50,12 @@ const testHeight = 7;
  * @param input - Raw puzzle input string
  * @returns Formatted input data
  */
-function formatInput(input: string) {
+function formatInput(input: string): Position[] {
 	try {
-		return input.split("\n").map((line) => line.split(",").map(Number));
+		return input.split("\n").map((line) => {
+			const [x, y] = line.split(",").map(Number);
+			return [x, y] as Position;
+		});
 	} catch (error) {
 		throw new AoCError(
 			`Error formatting input: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -71,7 +74,11 @@ function createGrid(width: number, height: number) {
 	return grid;
 }
 
-function addObstacles(grid: string[][], obstacles: number[][], firstNBytes: number) {
+function addObstacles(
+	grid: string[][],
+	obstacles: number[][],
+	firstNBytes: number,
+) {
 	for (const [x, y] of obstacles.slice(0, firstNBytes)) {
 		grid[y][x] = "#";
 	}
@@ -97,10 +104,16 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 			current: [number, number],
 			next: [number, number],
 			grid: string[][],
-		) => grid[next[1]][next[0]] === "#" ? Number.POSITIVE_INFINITY : 1;
+		) => (grid[next[1]][next[0]] === "#" ? Number.POSITIVE_INFINITY : 1);
 
-		const { distances, path } = dijkstra(grid, start, end, GRID_DIRECTIONS.CARDINAL, getCost);
-		
+		const { distances, path } = dijkstra(
+			grid,
+			start,
+			end,
+			GRID_DIRECTIONS.CARDINAL,
+			getCost,
+		);
+
 		return distances.get(convertTupleToString(...end))!;
 	} catch (error) {
 		throw new AoCError(
@@ -113,26 +126,72 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 }
 
 /**
- * Checks if a path exists from start to end
- * @param grid - The game grid
- * @param start - Starting coordinates
- * @param end - Ending coordinates
- * @returns Whether a path exists
+ * Represents a position on the grid
  */
-function hasPath(
-	grid: string[][],
-	start: [number, number],
-	end: [number, number]
-): boolean {
-	const getCost = (
-		current: [number, number],
-		next: [number, number],
-		grid: string[][]
-	) => (grid[next[1]][next[0]] === "#" ? Number.POSITIVE_INFINITY : 1);
+type Position = [number, number];
 
-	const { distances } = dijkstra(grid, start, end, GRID_DIRECTIONS.CARDINAL, getCost);
-	const endKey = convertTupleToString(...end);
-	return distances.has(endKey) && distances.get(endKey)! < Number.POSITIVE_INFINITY;
+/**
+ * Represents a set of obstacles and their edge connections
+ */
+type ObstacleSet = {
+	positions: Set<string>;
+	edges: Set<string>;
+};
+
+/**
+ * Gets the edges that a position touches
+ * @param pos - The position to check
+ * @param width - Width of the grid
+ * @param height - Height of the grid
+ */
+function getEdges(pos: Position, width: number, height: number): Set<string> {
+	const edges = new Set<string>();
+	const [x, y] = pos;
+
+	if (x === 0) edges.add("L");
+	if (x === width - 1) edges.add("R");
+	if (y === 0) edges.add("T");
+	if (y === height - 1) edges.add("B");
+
+	return edges;
+}
+
+/**
+ * Checks if a set of edges creates a blocking condition
+ */
+function isBlocking(edges: Set<string>): boolean {
+	return (
+		(edges.has("L") && edges.has("T")) ||
+		(edges.has("L") && edges.has("R")) ||
+		(edges.has("R") && edges.has("B")) ||
+		(edges.has("T") && edges.has("B"))
+	);
+}
+
+/**
+ * Converts a position to a string key
+ */
+function posToKey(pos: Position): string {
+	return `${pos[0]},${pos[1]}`;
+}
+
+/**
+ * Checks if a position is adjacent to any position in a set (including diagonals)
+ */
+function isNextTo(pos: Position, positions: Set<string>): boolean {
+	const [x, y] = pos;
+	const neighbors: Position[] = [
+		[x - 1, y - 1],
+		[x - 1, y],
+		[x - 1, y + 1],
+		[x, y - 1],
+		[x, y + 1],
+		[x + 1, y - 1],
+		[x + 1, y],
+		[x + 1, y + 1],
+	];
+
+	return neighbors.some((n) => positions.has(posToKey(n)));
 }
 
 /**
@@ -142,27 +201,43 @@ function hasPath(
  */
 function solvePart2(input: ReturnType<typeof formatInput>): string {
 	try {
-		let left = 0;
-		let right = input.length - 1;
-		let blockingIndex = -1;
+		const byteSets = new Map<string, ObstacleSet>();
 
-		while (left <= right) {
-			const mid = Math.floor((left + right) / 2);
-			const grid = createGrid(REAL_WIDTH, REAL_HEIGHT);
-			addObstacles(grid, input, mid + 1);
+		for (const byte of input) {
+			// Find all sets that need to be merged
+			const setsToMerge: ObstacleSet[] = [];
+			const byteKey = posToKey(byte);
 
-			const start: [number, number] = [0, 0];
-			const end: [number, number] = [REAL_WIDTH - 1, REAL_HEIGHT - 1];
+			for (const [key, set] of byteSets) {
+				if (isNextTo(byte, set.positions)) {
+					setsToMerge.push(set);
+					byteSets.delete(key);
+				}
+			}
 
-			if (!hasPath(grid, start, end)) {
-				blockingIndex = mid;
-				right = mid - 1;
-			} else {
-				left = mid + 1;
+			// Create new set with merged data
+			const newPositions = new Set<string>([byteKey]);
+			const newEdges = getEdges(byte, REAL_WIDTH, REAL_HEIGHT);
+
+			// Merge existing sets
+			for (const set of setsToMerge) {
+				set.positions.forEach((p) => newPositions.add(p));
+				set.edges.forEach((e) => newEdges.add(e));
+			}
+
+			// Store new set
+			byteSets.set(byteKey, {
+				positions: newPositions,
+				edges: newEdges,
+			});
+
+			// Check if this creates a blocking condition
+			if (isBlocking(newEdges)) {
+				return byte.join(",");
 			}
 		}
 
-		return input[blockingIndex].join(",");
+		throw new Error("No blocking obstacle found");
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
