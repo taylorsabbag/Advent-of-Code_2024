@@ -5,7 +5,7 @@ import { AoCError } from "@/utils/index.js";
  * @param input - String representing a grid with newline separators
  * @returns 2D array of characters
  */
-export const createGrid = (input: string) => {
+export const formatGrid = (input: string) => {
 	return input.split("\n").map((line) => line.split(""));
 };
 
@@ -119,3 +119,129 @@ export const createSolutionWrapper = <T, R>(
 		};
 	};
 };
+
+/**
+ * Represents a node in the pathfinding graph
+ */
+type DijkstraNode = {
+	position: [number, number];
+	cost: number;
+};
+
+/**
+ * Custom type for the cost calculation function
+ */
+type CostFunction<T> = (
+	current: [number, number],
+	next: [number, number],
+	grid: T[][]
+) => number;
+
+/**
+ * Implements Dijkstra's algorithm for pathfinding on a 2D grid
+ * @param grid - The 2D grid to navigate
+ * @param start - Starting position as [row, col]
+ * @param end - Target position as [row, col]
+ * @param directions - Array of direction vectors to use for navigation
+ * @param getCost - Function to calculate cost between positions
+ * @returns Object containing distances to all reachable positions and the optimal path to the end
+ * @throws {Error} If start or end positions are out of bounds
+ */
+export const dijkstra = <T>(
+	grid: T[][],
+	start: [number, number],
+	end: [number, number],
+	directions: readonly (readonly [number, number])[],
+	getCost: CostFunction<T>
+): {
+	distances: Map<string, number>;
+	path: [number, number][];
+} => {
+	if (!isInBounds(grid, start[0], start[1]) || !isInBounds(grid, end[0], end[1])) {
+		throw new Error("Start or end position is out of bounds");
+	}
+
+	const distances = new Map<string, number>();
+	const previous = new Map<string, [number, number]>();
+	const unvisited = new Set<string>();
+	
+	// Initialize distances
+	for (let row = 0; row < grid.length; row++) {
+		for (let col = 0; col < grid[0].length; col++) {
+			const pos = convertTupleToString(row, col);
+			distances.set(pos, Infinity);
+			unvisited.add(pos);
+		}
+	}
+	
+	distances.set(convertTupleToString(...start), 0);
+	
+	while (unvisited.size > 0) {
+		// Find unvisited node with minimum distance
+		let minDistance = Infinity;
+		let current = "";
+		
+		for (const pos of unvisited) {
+			const distance = distances.get(pos) ?? Infinity;
+			if (distance < minDistance) {
+				minDistance = distance;
+				current = pos;
+			}
+		}
+		
+		if (current === "" || minDistance === Infinity) {
+			break; // No reachable nodes left
+		}
+		
+		if (current === convertTupleToString(...end)) {
+			break; // Reached the target
+		}
+		
+		unvisited.delete(current);
+		const [currentRow, currentCol] = convertStringToTuple(current, COORDINATE_CONVERTERS.NUMBER);
+		
+		// Check all neighbors
+		for (const [dRow, dCol] of directions) {
+			const newRow = currentRow + dRow;
+			const newCol = currentCol + dCol;
+			
+			if (!isInBounds(grid, newRow, newCol)) {
+				continue;
+			}
+			
+			const neighbor = convertTupleToString(newRow, newCol);
+			if (!unvisited.has(neighbor)) {
+				continue;
+			}
+			
+			const cost = getCost(
+				[currentRow, currentCol],
+				[newRow, newCol],
+				grid
+			);
+			const newDistance = (distances.get(current) ?? Infinity) + cost;
+			
+			if (newDistance < (distances.get(neighbor) ?? Infinity)) {
+				distances.set(neighbor, newDistance);
+				previous.set(neighbor, [currentRow, currentCol]);
+			}
+		}
+	}
+	
+	// Reconstruct path
+	const path: [number, number][] = [];
+	let current = convertTupleToString(...end);
+	
+	while (current !== convertTupleToString(...start)) {
+		const pos = convertStringToTuple(current, COORDINATE_CONVERTERS.NUMBER);
+		path.unshift(pos);
+		
+		const prev = previous.get(current);
+		if (!prev) break; // No path exists
+		current = convertTupleToString(...prev);
+	}
+	path.unshift(start);
+	
+	return { distances, path };
+};
+

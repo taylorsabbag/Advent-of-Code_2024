@@ -5,7 +5,6 @@
 
 import {
 	AoCError,
-	createGrid,
 	extractDayNumber,
 	getCurrentYear,
 	runner as runSolution,

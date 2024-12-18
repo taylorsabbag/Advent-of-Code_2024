@@ -15,7 +15,8 @@ export { default as getInput } from "@utils/getInput.js";
 export { default as timed } from "@utils/performance.js";
 export { default as AoCError } from "@utils/errors.js";
 export {
-	createGrid,
+	formatGrid,
+	dijkstra,
 	convertTupleToString,
 	convertStringToTuple,
 	GRID_DIRECTIONS,
