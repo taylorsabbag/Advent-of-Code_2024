@@ -169,13 +169,6 @@ function isBlocking(edges: Set<string>): boolean {
 }
 
 /**
- * Converts a position to a string key
- */
-function posToKey(pos: Position): string {
-	return `${pos[0]},${pos[1]}`;
-}
-
-/**
  * Checks if a position is adjacent to any position in a set (including diagonals)
  */
 function isNextTo(pos: Position, positions: Set<string>): boolean {
@@ -191,7 +184,7 @@ function isNextTo(pos: Position, positions: Set<string>): boolean {
 		[x + 1, y + 1],
 	];
 
-	return neighbors.some((n) => positions.has(posToKey(n)));
+	return neighbors.some((n) => positions.has(convertTupleToString(...n)));
 }
 
 /**
@@ -206,7 +199,7 @@ function solvePart2(input: ReturnType<typeof formatInput>): string {
 		for (const byte of input) {
 			// Find all sets that need to be merged
 			const setsToMerge: ObstacleSet[] = [];
-			const byteKey = posToKey(byte);
+			const byteKey = convertTupleToString(...byte);
 
 			for (const [key, set] of byteSets) {
 				if (isNextTo(byte, set.positions)) {

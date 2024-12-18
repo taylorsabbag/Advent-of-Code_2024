@@ -44,7 +44,10 @@ export const convertStringToTuple = <T extends unknown[]>(
 
 // Common converter arrays for coordinates
 export const COORDINATE_CONVERTERS = {
-	NUMBER: [Number, Number] as [(str: string) => number, (str: string) => number],
+	NUMBER: [Number, Number] as [
+		(str: string) => number,
+		(str: string) => number,
+	],
 };
 
 /**
@@ -134,7 +137,7 @@ type DijkstraNode = {
 type CostFunction<T> = (
 	current: [number, number],
 	next: [number, number],
-	grid: T[][]
+	grid: T[][],
 ) => number;
 
 /**
@@ -152,96 +155,98 @@ export const dijkstra = <T>(
 	start: [number, number],
 	end: [number, number],
 	directions: readonly (readonly [number, number])[],
-	getCost: CostFunction<T>
+	getCost: CostFunction<T>,
 ): {
 	distances: Map<string, number>;
 	path: [number, number][];
 } => {
-	if (!isInBounds(grid, start[0], start[1]) || !isInBounds(grid, end[0], end[1])) {
+	if (
+		!isInBounds(grid, start[0], start[1]) ||
+		!isInBounds(grid, end[0], end[1])
+	) {
 		throw new Error("Start or end position is out of bounds");
 	}
 
 	const distances = new Map<string, number>();
 	const previous = new Map<string, [number, number]>();
 	const unvisited = new Set<string>();
-	
+
 	// Initialize distances
 	for (let row = 0; row < grid.length; row++) {
 		for (let col = 0; col < grid[0].length; col++) {
 			const pos = convertTupleToString(row, col);
-			distances.set(pos, Infinity);
+			distances.set(pos, Number.POSITIVE_INFINITY);
 			unvisited.add(pos);
 		}
 	}
-	
+
 	distances.set(convertTupleToString(...start), 0);
-	
+
 	while (unvisited.size > 0) {
 		// Find unvisited node with minimum distance
-		let minDistance = Infinity;
+		let minDistance = Number.POSITIVE_INFINITY;
 		let current = "";
-		
+
 		for (const pos of unvisited) {
-			const distance = distances.get(pos) ?? Infinity;
+			const distance = distances.get(pos) ?? Number.POSITIVE_INFINITY;
 			if (distance < minDistance) {
 				minDistance = distance;
 				current = pos;
 			}
 		}
-		
-		if (current === "" || minDistance === Infinity) {
+
+		if (current === "" || minDistance === Number.POSITIVE_INFINITY) {
 			break; // No reachable nodes left
 		}
-		
+
 		if (current === convertTupleToString(...end)) {
 			break; // Reached the target
 		}
-		
+
 		unvisited.delete(current);
-		const [currentRow, currentCol] = convertStringToTuple(current, COORDINATE_CONVERTERS.NUMBER);
-		
+		const [currentRow, currentCol] = convertStringToTuple(
+			current,
+			COORDINATE_CONVERTERS.NUMBER,
+		);
+
 		// Check all neighbors
 		for (const [dRow, dCol] of directions) {
 			const newRow = currentRow + dRow;
 			const newCol = currentCol + dCol;
-			
+
 			if (!isInBounds(grid, newRow, newCol)) {
 				continue;
 			}
-			
+
 			const neighbor = convertTupleToString(newRow, newCol);
 			if (!unvisited.has(neighbor)) {
 				continue;
 			}
-			
-			const cost = getCost(
-				[currentRow, currentCol],
-				[newRow, newCol],
-				grid
-			);
-			const newDistance = (distances.get(current) ?? Infinity) + cost;
-			
-			if (newDistance < (distances.get(neighbor) ?? Infinity)) {
+
+			const cost = getCost([currentRow, currentCol], [newRow, newCol], grid);
+			const newDistance =
+				(distances.get(current) ?? Number.POSITIVE_INFINITY) + cost;
+
+			if (newDistance < (distances.get(neighbor) ?? Number.POSITIVE_INFINITY)) {
 				distances.set(neighbor, newDistance);
 				previous.set(neighbor, [currentRow, currentCol]);
 			}
 		}
 	}
-	
+
 	// Reconstruct path
 	const path: [number, number][] = [];
 	let current = convertTupleToString(...end);
-	
+
 	while (current !== convertTupleToString(...start)) {
 		const pos = convertStringToTuple(current, COORDINATE_CONVERTERS.NUMBER);
 		path.unshift(pos);
-		
+
 		const prev = previous.get(current);
 		if (!prev) break; // No path exists
 		current = convertTupleToString(...prev);
 	}
 	path.unshift(start);
-	
+
 	return { distances, path };
 };
-
