@@ -5,9 +5,7 @@
 
 import {
 	AoCError,
-	GRID_DIRECTIONS,
 	convertTupleToString,
-	dijkstra,
 	extractDayNumber,
 	getCurrentYear,
 	runner as runSolution,
@@ -88,33 +86,61 @@ const REAL_HEIGHT = 71;
 const REAL_WIDTH = 71;
 
 /**
- * Solves part 1 of the puzzle
+ * Solves part 1 of the puzzle using BFS
  * @param input - Formatted input data
  * @returns Solution to part 1
  */
 function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
+		// Create and initialize the grid with obstacles
 		const grid = createGrid(REAL_WIDTH, REAL_HEIGHT);
 		addObstacles(grid, input, 1024);
 
-		const start: [number, number] = [0, 0];
-		const end: [number, number] = [REAL_WIDTH - 1, REAL_HEIGHT - 1];
+		// Initialize BFS queue with start position and distance
+		const queue: [number, number, number][] = [[0, 0, 0]]; // [x, y, distance]
+		const visited = new Set<string>();
+		const target: [number, number] = [REAL_WIDTH - 1, REAL_HEIGHT - 1];
 
-		const getCost = (
-			current: [number, number],
-			next: [number, number],
-			grid: string[][],
-		) => (grid[next[1]][next[0]] === "#" ? Number.POSITIVE_INFINITY : 1);
+		// Process queue
+		while (queue.length > 0) {
+			const [x, y, distance] = queue.shift()!;
+			const key = `${x},${y}`;
 
-		const { distances, path } = dijkstra(
-			grid,
-			start,
-			end,
-			GRID_DIRECTIONS.CARDINAL,
-			getCost,
-		);
+			// Skip if already visited
+			if (visited.has(key)) continue;
+			visited.add(key);
 
-		return distances.get(convertTupleToString(...end))!;
+			// Check if we reached the target
+			if (x === target[0] && y === target[1]) {
+				return distance;
+			}
+
+			// Check all four directions
+			const neighbors: [number, number][] = [
+				[x, y - 1], // up
+				[x + 1, y], // right
+				[x, y + 1], // down
+				[x - 1, y], // left
+			];
+
+			// Add valid neighbors to queue
+			for (const [nx, ny] of neighbors) {
+				// Skip if out of bounds
+				if (nx < 0 || nx >= REAL_WIDTH || ny < 0 || ny >= REAL_HEIGHT) {
+					continue;
+				}
+
+				// Skip if obstacle or already visited
+				if (grid[ny][nx] === "#" || visited.has(`${nx},${ny}`)) {
+					continue;
+				}
+
+				// Add to queue with increased distance
+				queue.push([nx, ny, distance + 1]);
+			}
+		}
+
+		throw new Error("No path found to target");
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -138,16 +164,21 @@ type Position = [number, number];
 function solvePart2(input: ReturnType<typeof formatInput>): string {
 	try {
 		// Step 1: Construct time matrix T[r][c]
-		const T = Array.from({ length: REAL_HEIGHT }, () => 
-			Array(REAL_WIDTH).fill(input.length)
+		const T = Array.from({ length: REAL_HEIGHT }, () =>
+			Array(REAL_WIDTH).fill(input.length),
 		);
 
 		// Fill T with drop times
 		for (let i = 0; i < input.length; i++) {
 			const [x, y] = input[i];
-			if (x === undefined || y === undefined || 
-				x < 0 || y < 0 || 
-				x >= REAL_WIDTH || y >= REAL_HEIGHT) {
+			if (
+				x === undefined ||
+				y === undefined ||
+				x < 0 ||
+				y < 0 ||
+				x >= REAL_WIDTH ||
+				y >= REAL_HEIGHT
+			) {
 				continue;
 			}
 			T[y][x] = i;
