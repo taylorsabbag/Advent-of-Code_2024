@@ -131,106 +131,84 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
 type Position = [number, number];
 
 /**
- * Represents a set of obstacles and their edge connections
- */
-type ObstacleSet = {
-	positions: Set<string>;
-	edges: Set<string>;
-};
-
-/**
- * Gets the edges that a position touches
- * @param pos - The position to check
- * @param width - Width of the grid
- * @param height - Height of the grid
- */
-function getEdges(pos: Position, width: number, height: number): Set<string> {
-	const edges = new Set<string>();
-	const [x, y] = pos;
-
-	if (x === 0) edges.add("L");
-	if (x === width - 1) edges.add("R");
-	if (y === 0) edges.add("T");
-	if (y === height - 1) edges.add("B");
-
-	return edges;
-}
-
-/**
- * Checks if a set of edges creates a blocking condition
- */
-function isBlocking(edges: Set<string>): boolean {
-	return (
-		(edges.has("L") && edges.has("T")) ||
-		(edges.has("L") && edges.has("R")) ||
-		(edges.has("R") && edges.has("B")) ||
-		(edges.has("T") && edges.has("B"))
-	);
-}
-
-/**
- * Checks if a position is adjacent to any position in a set (including diagonals)
- */
-function isNextTo(pos: Position, positions: Set<string>): boolean {
-	const [x, y] = pos;
-	const neighbors: Position[] = [
-		[x - 1, y - 1],
-		[x - 1, y],
-		[x - 1, y + 1],
-		[x, y - 1],
-		[x, y + 1],
-		[x + 1, y - 1],
-		[x + 1, y],
-		[x + 1, y + 1],
-	];
-
-	return neighbors.some((n) => positions.has(convertTupleToString(...n)));
-}
-
-/**
- * Solves part 2 of the puzzle
+ * Solves part 2 using a time-based BFS approach
  * @param input - Formatted input data
  * @returns Solution to part 2
  */
 function solvePart2(input: ReturnType<typeof formatInput>): string {
 	try {
-		const byteSets = new Map<string, ObstacleSet>();
+		// Step 1: Construct time matrix T[r][c]
+		const T = Array.from({ length: REAL_HEIGHT }, () => 
+			Array(REAL_WIDTH).fill(input.length)
+		);
 
-		for (const byte of input) {
-			// Find all sets that need to be merged
-			const setsToMerge: ObstacleSet[] = [];
-			const byteKey = convertTupleToString(...byte);
+		// Fill T with drop times
+		for (let i = 0; i < input.length; i++) {
+			const [x, y] = input[i];
+			if (x === undefined || y === undefined || 
+				x < 0 || y < 0 || 
+				x >= REAL_WIDTH || y >= REAL_HEIGHT) {
+				continue;
+			}
+			T[y][x] = i;
+		}
 
-			for (const [key, set] of byteSets) {
-				if (isNextTo(byte, set.positions)) {
-					setsToMerge.push(set);
-					byteSets.delete(key);
+		// Step 2: Initialize k+1 queues (0 to k inclusive)
+		const k = input.length;
+
+		// Step 3: Push destination to Q[k], using same end position as part 1
+		const Q: Position[][] = new Array(k + 1);
+		for (let i = 0; i <= k; i++) {
+			Q[i] = [];
+		}
+		Q[k].push([REAL_WIDTH - 1, REAL_HEIGHT - 1]); // Fixed end position
+
+		// Track visited positions
+		const visited = new Set<string>();
+
+		// Step 4: Process queues from t=k down to 0
+		for (let t = k; t >= 0; t--) {
+			while (Q[t].length > 0) {
+				const current = Q[t].shift()!;
+				const key = convertTupleToString(current);
+
+				if (visited.has(key)) continue;
+				visited.add(key);
+
+				// Check if we reached (0,0)
+				if (current[0] === 0 && current[1] === 0) {
+					return input[t].join(",");
 				}
-			}
 
-			// Create new set with merged data
-			const newPositions = new Set<string>([byteKey]);
-			const newEdges = getEdges(byte, REAL_WIDTH, REAL_HEIGHT);
+				// Check all four neighbors
+				const [x, y] = current;
+				const neighbors: Position[] = [
+					[x, y - 1], // up
+					[x + 1, y], // right
+					[x, y + 1], // down
+					[x - 1, y], // left
+				];
 
-			// Merge existing sets
-			for (const set of setsToMerge) {
-				set.positions.forEach((p) => newPositions.add(p));
-				set.edges.forEach((e) => newEdges.add(e));
-			}
+				for (const [nx, ny] of neighbors) {
+					// Skip if out of bounds, using same bounds as part 1
+					if (nx < 0 || nx >= REAL_WIDTH || ny < 0 || ny >= REAL_HEIGHT) {
+						continue;
+					}
 
-			// Store new set
-			byteSets.set(byteKey, {
-				positions: newPositions,
-				edges: newEdges,
-			});
+					const neighborKey = convertTupleToString([nx, ny]);
+					if (visited.has(neighborKey)) continue;
 
-			// Check if this creates a blocking condition
-			if (isBlocking(newEdges)) {
-				return byte.join(",");
+					const dropTime = T[ny][nx];
+					if (dropTime >= t) {
+						Q[t].push([nx, ny]);
+					} else {
+						Q[dropTime].push([nx, ny]);
+					}
+				}
 			}
 		}
 
-		throw new Error("No blocking obstacle found");
+		throw new Error("No solution found");
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
