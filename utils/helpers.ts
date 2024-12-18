@@ -167,14 +167,6 @@ export const HEURISTICS = {
 } as const;
 
 /**
- * Represents a node in the pathfinding graph
- */
-type DijkstraNode = {
-	position: [number, number];
-	cost: number;
-};
-
-/**
  * Implements Dijkstra's algorithm for pathfinding on a 2D grid
  */
 export const dijkstra = <T>(
