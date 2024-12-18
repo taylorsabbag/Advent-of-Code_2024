@@ -1,5 +1,7 @@
 import { AoCError } from "@/utils/index.js";
 
+// ===== Grid Formatting and Basic Operations =====
+
 /**
  * Creates a 2D grid from a string input
  * @param input - String representing a grid with newline separators
@@ -8,6 +10,23 @@ import { AoCError } from "@/utils/index.js";
 export const formatGrid = (input: string) => {
 	return input.split("\n").map((line) => line.split(""));
 };
+
+/**
+ * Checks if a position is within grid bounds
+ * @param grid - The 2D grid to check against
+ * @param row - Row position
+ * @param col - Column position
+ * @returns Whether the position is valid
+ */
+export const isInBounds = <T>(
+	grid: T[][],
+	row: number,
+	col: number,
+): boolean => {
+	return row >= 0 && row < grid.length && col >= 0 && col < grid[0].length;
+};
+
+// ===== Coordinate and Tuple Handling =====
 
 /**
  * Converts a tuple of values into a string representation
@@ -50,6 +69,8 @@ export const COORDINATE_CONVERTERS = {
 	],
 };
 
+// ===== Grid Navigation Constants =====
+
 /**
  * Standard directional vectors for 2D grid navigation
  */
@@ -80,56 +101,7 @@ export const GRID_DIRECTIONS = {
 	] as const,
 };
 
-/**
- * Checks if a position is within grid bounds
- * @param grid - The 2D grid to check against
- * @param row - Row position
- * @param col - Column position
- * @returns Whether the position is valid
- */
-export const isInBounds = <T>(
-	grid: T[][],
-	row: number,
-	col: number,
-): boolean => {
-	return row >= 0 && row < grid.length && col >= 0 && col < grid[0].length;
-};
-
-/**
- * Creates a solution wrapper with standardized error handling
- * @param day - Current day number
- * @param part - Puzzle part (1 or 2)
- * @param description - Optional description of what the solution does
- * @returns Higher-order function that wraps the solution with error handling
- */
-export const createSolutionWrapper = <T, R>(
-	day: number,
-	part: 1 | 2,
-	description?: string,
-) => {
-	return (solutionFn: (input: T) => R) => {
-		return (input: T): R => {
-			try {
-				return solutionFn(input);
-			} catch (error) {
-				throw new AoCError(
-					`Error ${description ? `${description}: ` : ""}${error instanceof Error ? error.message : "Unknown error"}`,
-					day,
-					part,
-					error instanceof Error ? error : undefined,
-				);
-			}
-		};
-	};
-};
-
-/**
- * Represents a node in the pathfinding graph
- */
-type DijkstraNode = {
-	position: [number, number];
-	cost: number;
-};
+// ===== Pathfinding Algorithms and Related Types =====
 
 /**
  * Custom type for the cost calculation function
@@ -141,14 +113,69 @@ type CostFunction<T> = (
 ) => number;
 
 /**
+ * Custom type for the heuristic calculation function
+ */
+type HeuristicFunction = (
+	current: [number, number],
+	end: [number, number]
+) => number;
+
+/**
+ * Common heuristic functions for pathfinding algorithms
+ */
+export const HEURISTICS = {
+	/**
+	 * Manhattan distance heuristic
+	 * Best for grids that allow only cardinal movements (no diagonals)
+	 */
+	MANHATTAN: ((current: [number, number], end: [number, number]): number => {
+		return Math.abs(current[0] - end[0]) + Math.abs(current[1] - end[1]);
+	}) satisfies HeuristicFunction,
+
+	/**
+	 * Euclidean distance heuristic
+	 * Best for grids that allow movement in any direction
+	 */
+	EUCLIDEAN: ((current: [number, number], end: [number, number]): number => {
+		const dx = current[0] - end[0];
+		const dy = current[1] - end[1];
+		return Math.sqrt(dx * dx + dy * dy);
+	}) satisfies HeuristicFunction,
+
+	/**
+	 * Chebyshev distance heuristic
+	 * Best for grids that allow diagonal movement with cost equal to cardinal movement
+	 */
+	CHEBYSHEV: ((current: [number, number], end: [number, number]): number => {
+		const dx = Math.abs(current[0] - end[0]);
+		const dy = Math.abs(current[1] - end[1]);
+		return Math.max(dx, dy);
+	}) satisfies HeuristicFunction,
+
+	/**
+	 * Octile distance heuristic
+	 * Best for grids that allow diagonal movement with cost = sqrt(2) * cardinal movement
+	 */
+	OCTILE: ((current: [number, number], end: [number, number]): number => {
+		const dx = Math.abs(current[0] - end[0]);
+		const dy = Math.abs(current[1] - end[1]);
+		const SQRT2_MINUS_1 = Math.SQRT2 - 1;
+		return dx > dy 
+			? dx + SQRT2_MINUS_1 * dy 
+			: dy + SQRT2_MINUS_1 * dx;
+	}) satisfies HeuristicFunction,
+} as const;
+
+/**
+ * Represents a node in the pathfinding graph
+ */
+type DijkstraNode = {
+	position: [number, number];
+	cost: number;
+};
+
+/**
  * Implements Dijkstra's algorithm for pathfinding on a 2D grid
- * @param grid - The 2D grid to navigate
- * @param start - Starting position as [row, col]
- * @param end - Target position as [row, col]
- * @param directions - Array of direction vectors to use for navigation
- * @param getCost - Function to calculate cost between positions
- * @returns Object containing distances to all reachable positions and the optimal path to the end
- * @throws {Error} If start or end positions are out of bounds
  */
 export const dijkstra = <T>(
 	grid: T[][],
@@ -250,3 +277,204 @@ export const dijkstra = <T>(
 
 	return { distances, path };
 };
+
+/**
+ * Performs Breadth-First Search pathfinding on a 2D grid
+ */
+export const bfs = <T>(
+	grid: T[][],
+	start: [number, number],
+	end: [number, number],
+	directions: readonly (readonly [number, number])[],
+	isValidMove?: (current: [number, number], next: [number, number], grid: T[][]) => boolean
+): [number, number][] => {
+	if (!isInBounds(grid, start[0], start[1]) || !isInBounds(grid, end[0], end[1])) {
+		throw new Error("Start or end position is out of bounds");
+	}
+
+	const queue: [number, number][] = [start];
+	const visited = new Set<string>();
+	const previous = new Map<string, [number, number]>();
+	
+	visited.add(convertTupleToString(...start));
+
+	while (queue.length > 0) {
+		const current = queue.shift()!;
+		
+		if (current[0] === end[0] && current[1] === end[1]) {
+			// Reconstruct path
+			const path: [number, number][] = [];
+			let currentPos: [number, number] = end;
+			
+			while (currentPos[0] !== start[0] || currentPos[1] !== start[1]) {
+				path.unshift(currentPos);
+				const prev = previous.get(convertTupleToString(...currentPos));
+				if (!prev) break;
+				currentPos = prev;
+			}
+			path.unshift(start);
+			return path;
+		}
+
+		for (const [dRow, dCol] of directions) {
+			const newRow = current[0] + dRow;
+			const newCol = current[1] + dCol;
+			
+			if (!isInBounds(grid, newRow, newCol)) {
+				continue;
+			}
+
+			const nextPos: [number, number] = [newRow, newCol];
+			const nextPosStr = convertTupleToString(...nextPos);
+
+			if (visited.has(nextPosStr)) {
+				continue;
+			}
+
+			if (isValidMove && !isValidMove(current, nextPos, grid)) {
+				continue;
+			}
+
+			visited.add(nextPosStr);
+			previous.set(nextPosStr, current);
+			queue.push(nextPos);
+		}
+	}
+
+	return []; // No path found
+};
+
+/**
+ * Represents a node in the A* pathfinding algorithm
+ */
+type AStarNode = {
+	position: [number, number];
+	g: number; // Cost from start to current node
+	h: number; // Heuristic estimate from current node to end
+	f: number; // Total cost (g + h)
+};
+
+/**
+ * Implements A* pathfinding algorithm on a 2D grid
+ */
+export const astar = <T>(
+	grid: T[][],
+	start: [number, number],
+	end: [number, number],
+	directions: readonly (readonly [number, number])[],
+	getCost: CostFunction<T>,
+	heuristic: HeuristicFunction
+): [number, number][] => {
+	if (!isInBounds(grid, start[0], start[1]) || !isInBounds(grid, end[0], end[1])) {
+		throw new Error("Start or end position is out of bounds");
+	}
+
+	const openSet = new Map<string, AStarNode>();
+	const closedSet = new Set<string>();
+	const previous = new Map<string, [number, number]>();
+
+	// Initialize start node
+	openSet.set(convertTupleToString(...start), {
+		position: start,
+		g: 0,
+		h: heuristic(start, end),
+		f: heuristic(start, end)
+	});
+
+	while (openSet.size > 0) {
+		// Find node with lowest f score
+		let currentNode: AStarNode | undefined;
+		let currentKey = "";
+		
+		for (const [key, node] of openSet) {
+			if (!currentNode || node.f < currentNode.f) {
+				currentNode = node;
+				currentKey = key;
+			}
+		}
+
+		if (!currentNode) break;
+		
+		if (currentNode.position[0] === end[0] && currentNode.position[1] === end[1]) {
+			// Reconstruct path
+			const path: [number, number][] = [];
+			let currentPos: [number, number] = end;
+			
+			while (currentPos[0] !== start[0] || currentPos[1] !== start[1]) {
+				path.unshift(currentPos);
+				const prev = previous.get(convertTupleToString(...currentPos));
+				if (!prev) break;
+				currentPos = prev;
+			}
+			path.unshift(start);
+			return path;
+		}
+
+		openSet.delete(currentKey);
+		closedSet.add(currentKey);
+
+		for (const [dRow, dCol] of directions) {
+			const newRow = currentNode.position[0] + dRow;
+			const newCol = currentNode.position[1] + dCol;
+			
+			if (!isInBounds(grid, newRow, newCol)) {
+				continue;
+			}
+
+			const neighborPos: [number, number] = [newRow, newCol];
+			const neighborKey = convertTupleToString(...neighborPos);
+
+			if (closedSet.has(neighborKey)) {
+				continue;
+			}
+
+			const gScore = currentNode.g + getCost(currentNode.position, neighborPos, grid);
+			const hScore = heuristic(neighborPos, end);
+			const fScore = gScore + hScore;
+
+			const existingNeighbor = openSet.get(neighborKey);
+			if (!existingNeighbor || gScore < existingNeighbor.g) {
+				previous.set(neighborKey, currentNode.position);
+				openSet.set(neighborKey, {
+					position: neighborPos,
+					g: gScore,
+					h: hScore,
+					f: fScore
+				});
+			}
+		}
+	}
+
+	return []; // No path found
+};
+
+// ===== Error Handling =====
+
+/**
+ * Creates a solution wrapper with standardized error handling
+ * @param day - Current day number
+ * @param part - Puzzle part (1 or 2)
+ * @param description - Optional description of what the solution does
+ * @returns Higher-order function that wraps the solution with error handling
+ */
+export const createSolutionWrapper = <T, R>(
+	day: number,
+	part: 1 | 2,
+	description?: string,
+) => {
+	return (solutionFn: (input: T) => R) => {
+		return (input: T): R => {
+			try {
+				return solutionFn(input);
+			} catch (error) {
+				throw new AoCError(
+					`Error ${description ? `${description}: ` : ""}${error instanceof Error ? error.message : "Unknown error"}`,
+					day,
+					part,
+					error instanceof Error ? error : undefined,
+				);
+			}
+		};
+	};
+};
+

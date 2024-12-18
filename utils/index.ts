@@ -23,4 +23,7 @@ export {
 	isInBounds,
 	COORDINATE_CONVERTERS,
 	createSolutionWrapper,
+	bfs,
+	astar,
+	HEURISTICS,
 } from "@utils/helpers.js";
