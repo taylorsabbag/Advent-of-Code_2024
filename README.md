@@ -123,7 +123,7 @@ DAY=N npm run start:day    # N = 1-25
 # Run current day
 npm run day
 
-# Run latest solution
+# Run latest solution (that you've created; good when you're a day or more behind)
 npm run start:latest
 
 # Development mode with hot reload
@@ -142,6 +142,18 @@ npm run lint:fix
 
 # Build project
 npm run build
+
+# Run with test input
+DAY=N npm run start:day:test
+
+# Run current day with test input
+npm run day:test
+
+# Run latest solution with test input (that you've created; good when you're a day or more behind)
+npm run start:latest:test
+
+# Development mode with test input
+DAY=N npm run dev:test
 ```
 
 ### Creating Solution Files
