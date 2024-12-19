@@ -54,36 +54,38 @@ function formatInput(input: string) {
 	}
 }
 
-function canMakePattern(
+/**
+ * Counts all possible ways to make a pattern using the available towels
+ * @param towels - Array of towel patterns
+ * @param pattern - The target pattern to create
+ * @returns Number of ways to make the pattern
+ */
+function countPatternWays(
 	towels: string[],
 	pattern: string,
-	patternIndex: number,
-	path: string[] = [], // Track the towels we're using
-): boolean {
-	// Base case - successfully matched entire pattern
-	if (patternIndex >= pattern.length) {
-		console.log(`Found solution using: ${path.join(" + ")}`);
-		return true;
+	cache = new Map<string, number>(),
+): number {
+	// Check cache first
+	if (cache.has(pattern)) {
+		return cache.get(pattern)!;
 	}
 
-	const remaining = pattern.slice(patternIndex);
-	// Try each towel
-	for (const towel of towels) {
-		// Check if this towel exactly matches at the current position
-		if (remaining.startsWith(towel)) {
-			// Try using this towel
-			if (
-				canMakePattern(towels, pattern, patternIndex + towel.length, [
-					...path,
-					towel,
-				])
-			) {
-				return true;
-			}
+	// Base case - empty pattern is valid (1 way to make it)
+	if (pattern === "") {
+		return 1;
+	}
+
+	// Try each towel and sum up all possible ways
+	const ways = towels.reduce((sum, towel) => {
+		if (pattern.startsWith(towel)) {
+			sum += countPatternWays(towels, pattern.slice(towel.length), cache);
 		}
-	}
+		return sum;
+	}, 0);
 
-	return false;
+	// Cache the result
+	cache.set(pattern, ways);
+	return ways;
 }
 
 /**
@@ -94,15 +96,11 @@ function canMakePattern(
 function solvePart1(input: ReturnType<typeof formatInput>): number {
 	try {
 		const { towelTypes, designPatterns } = input;
-
-		return designPatterns.reduce((count, pattern) => {
-			console.log(`\nChecking pattern: ${pattern}`);
-			const possible = canMakePattern(towelTypes, pattern, 0);
-			console.log(
-				`Pattern ${pattern} is ${possible ? "possible" : "impossible"}`,
-			);
-			return count + (possible ? 1 : 0);
-		}, 0);
+		return designPatterns.reduce(
+			(sum, pattern) =>
+				sum + (countPatternWays(towelTypes, pattern) > 0 ? 1 : 0),
+			0,
+		);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 1: ${error instanceof Error ? error.message : "Unknown error"}`,
@@ -120,7 +118,11 @@ function solvePart1(input: ReturnType<typeof formatInput>): number {
  */
 function solvePart2(input: ReturnType<typeof formatInput>): number {
 	try {
-		return 0;
+		const { towelTypes, designPatterns } = input;
+		return designPatterns.reduce(
+			(sum, pattern) => sum + countPatternWays(towelTypes, pattern),
+			0,
+		);
 	} catch (error) {
 		throw new AoCError(
 			`Error solving part 2: ${error instanceof Error ? error.message : "Unknown error"}`,
