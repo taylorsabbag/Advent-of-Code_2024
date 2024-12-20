@@ -2,6 +2,8 @@ import { AoCError } from "@/utils/index.js";
 
 // ===== Grid Formatting and Basic Operations =====
 
+export type Grid<T> = T[][];
+
 /**
  * Creates a 2D grid from a string input
  * @param input - String representing a grid with newline separators
@@ -69,6 +71,35 @@ export const COORDINATE_CONVERTERS = {
 	],
 };
 
+/**
+ * Finds two specific characters' positions in the grid
+ * @param grid - The grid to search
+ * @param startChar - The character representing the first position
+ * @param endChar - The character representing the second position
+ * @returns Object containing both positions' coordinates
+ * @throws {Error} If either character is not found in the grid
+ */
+export function findPositions<T>(
+	grid: Grid<T>,
+	startChar: T,
+	endChar: T,
+): { start: [number, number]; end: [number, number] } {
+	const startY = grid.findIndex(row => row.includes(startChar));
+	const endY = grid.findIndex(row => row.includes(endChar));
+	
+	if (startY === -1 || endY === -1) {
+		throw new Error(`Characters '${startChar}' or '${endChar}' not found in grid`);
+	}
+	
+	const startX = grid[startY].findIndex(char => char === startChar);
+	const endX = grid[endY].findIndex(char => char === endChar);
+	
+	return {
+		start: [startY, startX] as [number, number],
+		end: [endY, endX] as [number, number]
+	};
+}
+
 // ===== Grid Navigation Constants =====
 
 /**
@@ -117,7 +148,7 @@ type CostFunction<T> = (
  */
 type HeuristicFunction = (
 	current: [number, number],
-	end: [number, number]
+	end: [number, number],
 ) => number;
 
 /**
@@ -160,9 +191,7 @@ export const HEURISTICS = {
 		const dx = Math.abs(current[0] - end[0]);
 		const dy = Math.abs(current[1] - end[1]);
 		const SQRT2_MINUS_1 = Math.SQRT2 - 1;
-		return dx > dy 
-			? dx + SQRT2_MINUS_1 * dy 
-			: dy + SQRT2_MINUS_1 * dx;
+		return dx > dy ? dx + SQRT2_MINUS_1 * dy : dy + SQRT2_MINUS_1 * dx;
 	}) satisfies HeuristicFunction,
 } as const;
 
@@ -175,6 +204,11 @@ export const dijkstra = <T>(
 	end: [number, number],
 	directions: readonly (readonly [number, number])[],
 	getCost: CostFunction<T>,
+	isValidMove?: (
+		current: [number, number],
+		next: [number, number],
+		grid: T[][],
+	) => boolean,
 ): {
 	distances: Map<string, number>;
 	path: [number, number][];
@@ -242,6 +276,14 @@ export const dijkstra = <T>(
 				continue;
 			}
 
+			// Add obstacle check
+			if (
+				isValidMove &&
+				!isValidMove([currentRow, currentCol], [newRow, newCol], grid)
+			) {
+				continue;
+			}
+
 			const cost = getCost([currentRow, currentCol], [newRow, newCol], grid);
 			const newDistance =
 				(distances.get(current) ?? Number.POSITIVE_INFINITY) + cost;
@@ -278,26 +320,33 @@ export const bfs = <T>(
 	start: [number, number],
 	end: [number, number],
 	directions: readonly (readonly [number, number])[],
-	isValidMove?: (current: [number, number], next: [number, number], grid: T[][]) => boolean
+	isValidMove?: (
+		current: [number, number],
+		next: [number, number],
+		grid: T[][],
+	) => boolean,
 ): [number, number][] => {
-	if (!isInBounds(grid, start[0], start[1]) || !isInBounds(grid, end[0], end[1])) {
+	if (
+		!isInBounds(grid, start[0], start[1]) ||
+		!isInBounds(grid, end[0], end[1])
+	) {
 		throw new Error("Start or end position is out of bounds");
 	}
 
 	const queue: [number, number][] = [start];
 	const visited = new Set<string>();
 	const previous = new Map<string, [number, number]>();
-	
+
 	visited.add(convertTupleToString(...start));
 
 	while (queue.length > 0) {
 		const current = queue.shift()!;
-		
+
 		if (current[0] === end[0] && current[1] === end[1]) {
 			// Reconstruct path
 			const path: [number, number][] = [];
 			let currentPos: [number, number] = end;
-			
+
 			while (currentPos[0] !== start[0] || currentPos[1] !== start[1]) {
 				path.unshift(currentPos);
 				const prev = previous.get(convertTupleToString(...currentPos));
@@ -311,7 +360,7 @@ export const bfs = <T>(
 		for (const [dRow, dCol] of directions) {
 			const newRow = current[0] + dRow;
 			const newCol = current[1] + dCol;
-			
+
 			if (!isInBounds(grid, newRow, newCol)) {
 				continue;
 			}
@@ -355,9 +404,12 @@ export const astar = <T>(
 	end: [number, number],
 	directions: readonly (readonly [number, number])[],
 	getCost: CostFunction<T>,
-	heuristic: HeuristicFunction
+	heuristic: HeuristicFunction,
 ): [number, number][] => {
-	if (!isInBounds(grid, start[0], start[1]) || !isInBounds(grid, end[0], end[1])) {
+	if (
+		!isInBounds(grid, start[0], start[1]) ||
+		!isInBounds(grid, end[0], end[1])
+	) {
 		throw new Error("Start or end position is out of bounds");
 	}
 
@@ -370,14 +422,14 @@ export const astar = <T>(
 		position: start,
 		g: 0,
 		h: heuristic(start, end),
-		f: heuristic(start, end)
+		f: heuristic(start, end),
 	});
 
 	while (openSet.size > 0) {
 		// Find node with lowest f score
 		let currentNode: AStarNode | undefined;
 		let currentKey = "";
-		
+
 		for (const [key, node] of openSet) {
 			if (!currentNode || node.f < currentNode.f) {
 				currentNode = node;
@@ -386,12 +438,15 @@ export const astar = <T>(
 		}
 
 		if (!currentNode) break;
-		
-		if (currentNode.position[0] === end[0] && currentNode.position[1] === end[1]) {
+
+		if (
+			currentNode.position[0] === end[0] &&
+			currentNode.position[1] === end[1]
+		) {
 			// Reconstruct path
 			const path: [number, number][] = [];
 			let currentPos: [number, number] = end;
-			
+
 			while (currentPos[0] !== start[0] || currentPos[1] !== start[1]) {
 				path.unshift(currentPos);
 				const prev = previous.get(convertTupleToString(...currentPos));
@@ -408,7 +463,7 @@ export const astar = <T>(
 		for (const [dRow, dCol] of directions) {
 			const newRow = currentNode.position[0] + dRow;
 			const newCol = currentNode.position[1] + dCol;
-			
+
 			if (!isInBounds(grid, newRow, newCol)) {
 				continue;
 			}
@@ -420,7 +475,8 @@ export const astar = <T>(
 				continue;
 			}
 
-			const gScore = currentNode.g + getCost(currentNode.position, neighborPos, grid);
+			const gScore =
+				currentNode.g + getCost(currentNode.position, neighborPos, grid);
 			const hScore = heuristic(neighborPos, end);
 			const fScore = gScore + hScore;
 
@@ -431,7 +487,7 @@ export const astar = <T>(
 					position: neighborPos,
 					g: gScore,
 					h: hScore,
-					f: fScore
+					f: fScore,
 				});
 			}
 		}
@@ -469,4 +525,3 @@ export const createSolutionWrapper = <T, R>(
 		};
 	};
 };
-
